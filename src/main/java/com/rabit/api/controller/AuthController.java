@@ -4,7 +4,6 @@ import com.rabit.api.dto.request.LoginRequest;
 import com.rabit.api.dto.request.RegisterRequest;
 import com.rabit.api.dto.request.VerifyEmailRequest;
 import com.rabit.api.dto.response.LoginResponse;
-import com.rabit.api.dto.response.PublicConfigResponse;
 import com.rabit.api.dto.response.RegisterResponse;
 import com.rabit.api.dto.response.UserMeResponse;
 import com.rabit.api.dto.response.VerifyEmailResponse;
@@ -12,7 +11,6 @@ import com.rabit.api.security.JwtUserContext;
 import com.rabit.api.service.AuthenticationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,18 +25,6 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthenticationService authenticationService;
-
-    @Value("${app.oauth2.google.enabled:false}")
-    private boolean googleEnabled;
-
-    @GetMapping("/config")
-    public ResponseEntity<PublicConfigResponse> getConfig() {
-        return ResponseEntity.ok(PublicConfigResponse.builder()
-                .google(PublicConfigResponse.GoogleConfig.builder()
-                        .enabled(googleEnabled)
-                        .build())
-                .build());
-    }
 
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {

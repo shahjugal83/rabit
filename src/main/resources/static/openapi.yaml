@@ -15,7 +15,7 @@ info:
     - **USER** — Basic access within a company.
 
     ## Getting Started
-    1. Register via `POST /auth/register` or Google OAuth2
+    1. Register via `POST /auth/register`
     2. Verify email via `POST /auth/verify`
     3. Login via `POST /auth/login` to get JWT token
     4. Use token in `Authorization: Bearer <token>` header
@@ -38,14 +38,6 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: Enter JWT token obtained from login
-    Google OAuth2:
-      type: oauth2
-      flows:
-        authorizationCode:
-          authorizationUrl: /oauth2/authorization/google
-          scopes:
-            email: Access email
-            profile: Access profile
 
   schemas:
     # ── Request Schemas ──────────────────────────────────────
@@ -510,19 +502,6 @@ components:
           description: Document type name
           example: Invoice
 
-    PublicConfigResponse:
-      type: object
-      description: Public configuration flags for the frontend
-      properties:
-        google:
-          type: object
-          description: Google OAuth2 configuration
-          properties:
-            enabled:
-              type: boolean
-              description: Whether Google login is enabled
-              example: true
-
     ErrorResponse:
       type: object
       properties:
@@ -558,21 +537,6 @@ components:
 
 paths:
   # ── Authentication ─────────────────────────────────────────
-
-  /auth/config:
-    get:
-      tags:
-        - Authentication
-      summary: Get public configuration
-      description: Returns public feature flags for the frontend. No authentication required.
-      security: []
-      responses:
-        '200':
-          description: Configuration retrieved
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PublicConfigResponse'
 
   /auth/register:
     post:

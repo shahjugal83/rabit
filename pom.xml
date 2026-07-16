@@ -48,12 +48,6 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
          
-        <!-- Spring Security OAuth2 Client -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-oauth2-client</artifactId>
-        </dependency>
-         
         <!-- Log4j2 Logging -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

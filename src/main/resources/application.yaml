@@ -33,18 +33,6 @@ spring:
           connectiontimeout: 5000
           timeout: 5000
           writetimeout: 5000
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: ${GOOGLE_CLIENT_ID:your-client-id}
-            client-secret: ${GOOGLE_CLIENT_SECRET:your-client-secret}
-            scope:
-              - email
-              - profile
-            redirect-uri: "{baseUrl}/login/oauth2/code/google"
-
 app:
   jwt:
     secret: your-secret-key-change-this-to-a-long-random-string-in-production
@@ -52,10 +40,6 @@ app:
     verification-expiration: 3600000
   company:
     base-domain: invoice.com
-  oauth2:
-    redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:3000}
-    google:
-      enabled: ${OAUTH2_GOOGLE_ENABLED:true}
   frontend:
     base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
 

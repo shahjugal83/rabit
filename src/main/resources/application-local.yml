@@ -1,0 +1,70 @@
+spring:
+  application:
+    name: api
+  logging:
+    config: classpath:log4j2-spring.xml
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.HSQLDialect
+        format_sql: true
+    show-sql: true
+  datasource:
+    url: jdbc:hsqldb:mem:saas_db;shutdown=true
+    username: sa
+    password:
+    driver-class-name: org.hsqldb.jdbc.JDBCDriver
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: your-email@gmail.com
+    password: your-app-password
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:your-client-id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:your-client-secret}
+            scope:
+              - email
+              - profile
+            redirect-uri: "{baseUrl}/login/oauth2/code/google"
+
+app:
+  jwt:
+    secret: your-secret-key-change-this-to-a-long-random-string-in-production
+    expiration: 86400000
+    verification-expiration: 3600000
+  company:
+    base-domain: invoice.com
+  oauth2:
+    redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:3000}
+    google:
+      enabled: true
+  frontend:
+    base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
+
+springdoc:
+  swagger-ui:
+    url: /openapi.yaml
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha

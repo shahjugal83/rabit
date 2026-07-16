@@ -1,0 +1,86 @@
+<?php require_once 'config.php'; ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Email - Rabit Invoice</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center px-4">
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Rabit</h1>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-8 text-center">
+            <div id="loading" class="py-4">
+                <div class="spinner mx-auto mb-4" style="width:2rem;height:2rem;border-width:3px;border-color:#2563eb;border-right-color:transparent;"></div>
+                <p class="text-gray-500">Verifying your email...</p>
+            </div>
+
+            <div id="success" class="hidden py-4">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900 mb-2">Email Verified!</h2>
+                <p class="text-gray-500 mb-6">Your email has been verified successfully.</p>
+                <a href="login.php" class="btn-primary inline-block" style="width:auto;padding:0.625rem 2rem;">Go to Login</a>
+            </div>
+
+            <div id="error" class="hidden py-4">
+                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900 mb-2">Verification Failed</h2>
+                <p class="text-gray-500 mb-6" id="error-message">Invalid or expired verification link.</p>
+                <a href="login.php" class="btn-primary inline-block" style="width:auto;padding:0.625rem 2rem;">Go to Login</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        (async function() {
+            const params = new URLSearchParams(window.location.search);
+            const token = params.get('token');
+
+            if (!token) {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('error').classList.remove('hidden');
+                document.getElementById('error-message').textContent = 'No verification token found.';
+                return;
+            }
+
+            const result = await apiCall('POST', '/auth/verify', { token });
+
+            document.getElementById('loading').classList.add('hidden');
+
+            if (result && result.status === 200) {
+                document.getElementById('success').classList.remove('hidden');
+            } else {
+                document.getElementById('error').classList.remove('hidden');
+                if (result?.data?.message) {
+                    document.getElementById('error-message').textContent = result.data.message;
+                }
+            }
+        })();
+    </script>
+</body>
+</html>

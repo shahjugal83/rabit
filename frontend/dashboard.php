@@ -1,0 +1,120 @@
+<?php require_once 'config.php'; requireLogin(); ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Rabit Invoice</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-gray-900">Rabit</h1>
+                    <span class="ml-3 text-sm text-gray-400">Dashboard</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span id="user-name" class="text-sm text-gray-600"></span>
+                    <a href="logout.php" class="text-sm text-red-600 hover:text-red-700 font-medium">Logout</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div id="loading" class="text-center py-12">
+            <div class="spinner mx-auto mb-4" style="width:2rem;height:2rem;border-width:3px;border-color:#2563eb;border-right-color:transparent;"></div>
+            <p class="text-gray-500">Loading dashboard...</p>
+        </div>
+
+        <div id="dashboard" class="hidden">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-900" id="welcome-msg"></h2>
+                <p class="text-gray-500 mt-1" id="user-email"></p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <p class="text-sm text-gray-500 mb-1">Status</p>
+                    <p id="user-status" class="text-lg font-semibold"></p>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <p class="text-sm text-gray-500 mb-1">Location</p>
+                    <p id="user-location" class="text-lg font-semibold"></p>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <p class="text-sm text-gray-500 mb-1">Companies</p>
+                    <p id="company-count" class="text-lg font-semibold"></p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Your Companies</h3>
+                <div id="companies-list" class="space-y-3"></div>
+                <p id="no-companies" class="hidden text-gray-400 text-sm">No companies yet. Create your first company to get started.</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script>
+        (async function() {
+            const result = await apiCall('GET', '/auth/me');
+
+            document.getElementById('loading').classList.add('hidden');
+
+            if (!result || result.status !== 200) {
+                window.location.href = 'login.php';
+                return;
+            }
+
+            const user = result.data;
+            document.getElementById('dashboard').classList.remove('hidden');
+
+            document.getElementById('user-name').textContent = user.firstName
+                ? user.firstName + ' ' + (user.lastName || '')
+                : user.username;
+            document.getElementById('welcome-msg').textContent = 'Welcome, ' + (user.firstName || user.username) + '!';
+            document.getElementById('user-email').textContent = user.email;
+            document.getElementById('user-status').textContent = user.status;
+
+            const location = [user.city, user.state, user.country].filter(Boolean).join(', ');
+            document.getElementById('user-location').textContent = location || 'Not set';
+
+            const companies = user.companies || [];
+            document.getElementById('company-count').textContent = companies.length;
+
+            if (companies.length === 0) {
+                document.getElementById('no-companies').classList.remove('hidden');
+            } else {
+                const listEl = document.getElementById('companies-list');
+                companies.forEach(c => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between p-4 bg-gray-50 rounded-lg';
+                    div.innerHTML = `
+                        <div>
+                            <p class="font-medium text-gray-900">${c.name}</p>
+                            <p class="text-sm text-gray-500">${c.role || ''}</p>
+                        </div>
+                    `;
+                    listEl.appendChild(div);
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

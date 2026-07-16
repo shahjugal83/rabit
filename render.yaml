@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: saas-invoice-api
+    runtime: java
+    plan: free
+    buildCommand: "./mvnw clean package -DskipTests"
+    startCommand: "java -jar target/api-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod"
+    envVars:
+      - key: JAVA_VERSION
+        value: "17"
+      - key: SPRING_PROFILES_ACTIVE
+        value: "prod"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRATION
+        value: "86400000"
+      - key: JWT_VERIFICATION_EXPIRATION
+        value: "3600000"
+      - key: FRONTEND_BASE_URL
+        sync: false
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: COMPANY_BASE_DOMAIN
+        value: "invoice.com"
+    disk:
+      name: hsqldb-data
+      mountPath: /data
+      sizeGB: 1

@@ -1,4 +1,6 @@
-const API_BASE = 'https://saas-invoice-api.onrender.com/api/v1';
+const API_BASE = window.location.hostname === 'localhost'
+    ? 'http://localhost:8080/api/v1'
+    : 'https://saas-invoice-api.onrender.com/api/v1';
 
 function getToken() {
     return localStorage.getItem('token');

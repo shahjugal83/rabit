@@ -24,7 +24,7 @@ RUN apk add --no-cache \
 RUN mkdir -p /var/www/html/frontend /run/nginx /data /etc/nginx/conf.d
 
 # Copy Java JAR
-COPY --from=build /app/target/api-0.0.1-SNAPSHOT.jar /app/app.jar
+COPY --from=build /app/target/*.jar /app/app.jar
 
 # Copy frontend files
 COPY frontend/ /var/www/html/frontend/
@@ -33,12 +33,6 @@ COPY frontend/ /var/www/html/frontend/
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY docker/supervisord.conf /etc/supervisord.conf
 COPY docker/www.conf /etc/php83/php-fpm.d/www.conf
-
-# Create startup script
-RUN printf '#!/bin/sh\n\
-java -jar /app/app.jar --spring.profiles.active=prod &\n\
-php-fpm83 -F &\n\
-nginx -g "daemon off;"\n' > /start.sh && chmod +x /start.sh
 
 EXPOSE 80
 

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - Rabit Invoice</title>
+    <title>Register - Rabbit Invoice</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -22,8 +22,8 @@
 <body class="bg-gray-50 min-h-screen flex items-center justify-center px-4 py-8">
     <div class="w-full max-w-lg">
         <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-gray-900">Rabit</h1>
-            <p class="text-gray-500 mt-1">SaaS Invoice Platform</p>
+            <h1 class="text-3xl font-bold text-gray-900">Rabbit</h1>
+            <p class="text-gray-500 mt-1">SaaS Multi Tenant Platform</p>
         </div>
 
         <div class="bg-white rounded-lg shadow-md p-8">

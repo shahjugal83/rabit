@@ -35,7 +35,7 @@ async function apiCall(method, endpoint, body = null) {
     const response = await fetch(`${API_BASE}${endpoint}`, config);
     const data = await response.json().catch(() => null);
 
-    if (response.status === 401) {
+    if (response.status === 401 && token) {
         clearAuth();
         window.location.href = 'login.php';
         return null;

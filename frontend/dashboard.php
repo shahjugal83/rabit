@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Rabit Invoice</title>
+    <title>Dashboard - Rabbit Invoice</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -24,7 +24,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
                 <div class="flex items-center">
-                    <h1 class="text-xl font-bold text-gray-900">Rabit</h1>
+                    <h1 class="text-xl font-bold text-gray-900">Rabbit</h1>
                     <span class="ml-3 text-sm text-gray-400">Dashboard</span>
                 </div>
                 <div class="flex items-center gap-4">
@@ -105,12 +105,16 @@
                 companies.forEach(c => {
                     const div = document.createElement('div');
                     div.className = 'flex items-center justify-between p-4 bg-gray-50 rounded-lg';
-                    div.innerHTML = `
-                        <div>
-                            <p class="font-medium text-gray-900">${c.name}</p>
-                            <p class="text-sm text-gray-500">${c.role || ''}</p>
-                        </div>
-                    `;
+                    const nameP = document.createElement('p');
+                    nameP.className = 'font-medium text-gray-900';
+                    nameP.textContent = c.name;
+                    const roleP = document.createElement('p');
+                    roleP.className = 'text-sm text-gray-500';
+                    roleP.textContent = c.role || '';
+                    const wrapper = document.createElement('div');
+                    wrapper.appendChild(nameP);
+                    wrapper.appendChild(roleP);
+                    div.appendChild(wrapper);
                     listEl.appendChild(div);
                 });
             }

@@ -1,0 +1,89 @@
+<?php require_once 'config.php'; redirectIfLoggedIn(); ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forgot Password - Rabbit Invoice</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center px-4">
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Rabbit</h1>
+            <p class="text-gray-500 mt-1">SaaS Multi Tenant Platform</p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">Forgot Password</h2>
+            <p class="text-gray-500 text-sm mb-6">Enter your email and we'll send you a link to reset your password.</p>
+
+            <div id="global-error" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm"></div>
+            <div id="success-msg" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm"></div>
+
+            <form id="forgotForm" onsubmit="handleForgot(event)">
+                <div class="mb-6">
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="email" name="email" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                           placeholder="john@example.com">
+                    <p id="email-error" class="hidden text-red-600 text-sm mt-1"></p>
+                </div>
+
+                <button type="submit" id="submitBtn"
+                        class="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition font-medium">
+                    Send Reset Link
+                </button>
+            </form>
+
+            <p class="text-center text-gray-500 text-sm mt-6">
+                Remember your password?
+                <a href="login.php" class="text-blue-600 hover:underline font-medium">Login</a>
+            </p>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        clearAuth();
+        async function handleForgot(e) {
+            e.preventDefault();
+            clearFieldErrors();
+            hideGlobalError();
+            document.getElementById('success-msg').classList.add('hidden');
+
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+
+            const email = document.getElementById('email').value.trim();
+            const result = await apiCall('POST', '/auth/forgot-password', { email });
+
+            btn.disabled = false;
+            btn.textContent = 'Send Reset Link';
+
+            if (!result) return;
+
+            if (result.status === 200) {
+                document.getElementById('success-msg').textContent = 'If an account exists with that email, a password reset link has been sent.';
+                document.getElementById('success-msg').classList.remove('hidden');
+                document.getElementById('forgotForm').reset();
+            } else {
+                showGlobalError(result.data?.message || result.data?.error || 'Something went wrong. Please try again.');
+            }
+        }
+    </script>
+</body>
+</html>

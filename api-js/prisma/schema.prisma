@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  userId       String   @id @default(uuid()) @map("user_id")
+  username     String   @unique
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  firstName    String?  @map("first_name")
+  lastName     String?  @map("last_name")
+  addressLine1 String?  @map("address_line1")
+  addressLine2 String?  @map("address_line2")
+  city         String?
+  state        String?
+  pinCode      String?  @map("pin_code")
+  country      String?
+  status       String   @default("INACTIVE")
+  emailVerified Boolean @default(false) @map("email_verified")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  companyUsers       CompanyUser[]
+  verificationTokens VerificationToken[]
+
+  @@map("users")
+}
+
+model Company {
+  companyId     String   @id @default(uuid()) @map("company_id")
+  name          String   @unique
+  urlSlug       String   @unique @map("url_slug")
+  description   String?
+  addressLine1  String   @map("address_line1")
+  addressLine2  String?  @map("address_line2")
+  city          String
+  state         String
+  country       String
+  pinCode       String   @map("pin_code")
+  contactNumber String   @map("contact_number")
+  logo          Bytes?
+  createdBy     String?  @map("created_by")
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  companyUsers  CompanyUser[]
+  documentTypes DocumentType[]
+
+  @@map("companies")
+}
+
+model CompanyUser {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  companyId String   @map("company_id")
+  role      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user    User    @relation(fields: [userId], references: [userId])
+  company Company @relation(fields: [companyId], references: [companyId])
+
+  @@unique([userId, companyId])
+  @@map("company_users")
+}
+
+model VerificationToken {
+  tokenId    String   @id @default(uuid()) @map("token_id")
+  userId     String   @map("user_id")
+  token      String   @unique
+  tokenType  String   @map("token_type")
+  status     String
+  expiryAt   DateTime @map("expiry_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [userId])
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiryAt])
+  @@map("verification_tokens")
+}
+
+model DocumentType {
+  documentTypeId String   @id @default(uuid()) @map("document_type_id")
+  companyId      String   @map("company_id")
+  name           String
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [companyId])
+
+  @@unique([companyId, name])
+  @@map("document_types")
+}

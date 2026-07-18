@@ -10,9 +10,9 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.HSQLDialect
         format_sql: true
-    show-sql: true
+    show-sql: false
   datasource:
-    url: jdbc:hsqldb:mem:saas_db;shutdown=true
+    url: jdbc:hsqldb:mem:saas_db
     username: sa
     password:
     driver-class-name: org.hsqldb.jdbc.JDBCDriver

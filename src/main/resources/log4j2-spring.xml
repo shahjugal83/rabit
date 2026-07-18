@@ -64,8 +64,8 @@
 
         <!-- Hibernate loggers -->
         <Logger name="org.hibernate" level="INFO" />
-        <Logger name="org.hibernate.SQL" level="DEBUG" />
-        <Logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE" />
+        <Logger name="org.hibernate.SQL" level="INFO" />
+        <Logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="INFO" />
 
         <!-- Database connection pool -->
         <Logger name="com.zaxxer.hikari" level="INFO" />

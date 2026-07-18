@@ -1,15 +1,11 @@
 {
-  "installCommand": "npm install && npx prisma generate",
-  "builds": [
-    {
-      "src": "index.js",
-      "use": "@vercel/node"
-    }
-  ],
+  "buildCommand": "npx prisma generate",
+  "outputDirectory": "public",
+  "installCommand": "npm install",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/index.js" },
-    { "source": "/health", "destination": "/index.js" },
-    { "source": "/swagger-ui.html", "destination": "/index.js" },
-    { "source": "/v3/api-docs", "destination": "/index.js" }
+    { "source": "/api/(.*)", "destination": "/api" },
+    { "source": "/health", "destination": "/api" },
+    { "source": "/swagger-ui.html", "destination": "/api" },
+    { "source": "/v3/api-docs", "destination": "/api" }
   ]
 }

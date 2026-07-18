@@ -1,6 +1,9 @@
-const API_BASE = window.location.hostname === 'localhost'
-    ? 'http://localhost:8080/api/v1'
-    : 'https://saas-invoice-api.onrender.com/api/v1';
+const API_BASE = (() => {
+    if (window.location.hostname === 'localhost') {
+        return 'http://localhost:3001/api/v1';
+    }
+    return window.location.origin + '/api/v1';
+})();
 
 function getToken() {
     return localStorage.getItem('token');
@@ -37,7 +40,7 @@ async function apiCall(method, endpoint, body = null) {
 
     if (response.status === 401 && token) {
         clearAuth();
-        window.location.href = 'login.php';
+        window.location.href = 'login.html';
         return null;
     }
 

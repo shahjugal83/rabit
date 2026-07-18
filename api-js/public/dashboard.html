@@ -1,4 +1,3 @@
-<?php require_once 'config.php'; requireLogin(); ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -29,7 +28,7 @@
                 </div>
                 <div class="flex items-center gap-4">
                     <span id="user-name" class="text-sm text-gray-600"></span>
-                    <a href="logout.php" class="text-sm text-red-600 hover:text-red-700 font-medium">Logout</a>
+                    <a href="logout.html" class="text-sm text-red-600 hover:text-red-700 font-medium">Logout</a>
                 </div>
             </div>
         </div>
@@ -72,13 +71,15 @@
 
     <script src="js/api.js"></script>
     <script>
+        if (!isLoggedIn()) { window.location.href = 'login.html'; }
+
         (async function() {
             const result = await apiCall('GET', '/auth/me');
 
             document.getElementById('loading').classList.add('hidden');
 
             if (!result || result.status !== 200) {
-                window.location.href = 'login.php';
+                window.location.href = 'login.html';
                 return;
             }
 

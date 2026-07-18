@@ -15,7 +15,7 @@ const frontendBaseUrl = process.env.FRONTEND_BASE_URL || 'http://localhost:3000'
 
 async function sendVerificationEmail(email, token) {
   try {
-    const link = `${frontendBaseUrl}/verify.php?token=${token}`;
+    const link = `${frontendBaseUrl}/verify.html?token=${token}`;
     await transporter.sendMail({
       from: fromEmail,
       to: email,
@@ -33,7 +33,7 @@ async function sendVerificationEmail(email, token) {
 
 async function sendPasswordResetEmail(email, token) {
   try {
-    const link = `${frontendBaseUrl}/reset-password.php?token=${token}`;
+    const link = `${frontendBaseUrl}/reset-password.html?token=${token}`;
     await transporter.sendMail({
       from: fromEmail,
       to: email,

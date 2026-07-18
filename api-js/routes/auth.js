@@ -213,24 +213,27 @@ router.post('/forgot-password', async (req, res, next) => {
     if (!email) return res.status(400).json({ error: 'email required' });
 
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) throw new ResourceNotFound('User not found with email: ' + email);
+    if (user) {
+      await prisma.verificationToken.deleteMany({ where: { userId: user.userId } });
 
-    await prisma.verificationToken.deleteMany({ where: { userId: user.userId } });
+      const resetToken = crypto.randomUUID();
+      await prisma.verificationToken.create({
+        data: {
+          userId: user.userId,
+          token: resetToken,
+          tokenType: 'PASSWORD_RESET',
+          status: 'ACTIVE',
+          expiryAt: new Date(Date.now() + VERIFICATION_EXPIRATION),
+        },
+      });
 
-    const resetToken = crypto.randomUUID();
-    await prisma.verificationToken.create({
-      data: {
-        userId: user.userId,
-        token: resetToken,
-        tokenType: 'PASSWORD_RESET',
-        status: 'ACTIVE',
-        expiryAt: new Date(Date.now() + VERIFICATION_EXPIRATION),
-      },
-    });
+      sendPasswordResetEmail(user.email, resetToken);
+      console.log('Password reset email sent to:', user.email);
+    } else {
+      console.log('Password reset requested for non-existent email:', email);
+    }
 
-    sendPasswordResetEmail(user.email, resetToken);
-    console.log('Password reset email sent to:', user.email);
-    res.json({ message: 'Password reset email sent' });
+    res.json({ message: 'If an account exists with that email, a password reset link has been sent.' });
   } catch (err) {
     next(err);
   }

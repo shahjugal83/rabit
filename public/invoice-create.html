@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Invoice - Rabbit Invoice</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <div class="layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div class="page-header">
+                <a href="invoices.html" class="back-link">&larr; Back to Invoices</a>
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-gray-900">Create Invoice</h2>
+                </div>
+            </div>
+            <div class="form-card">
+                <div id="form-error" class="hidden global-error"></div>
+                <form id="invoice-form">
+                    <div class="mb-4">
+                        <label class="label">Document Number *</label>
+                        <input type="text" id="doc-number" name="doc-number" required class="form-input" placeholder="e.g. INV-001">
+                    </div>
+                    <div class="mb-4">
+                        <label class="label">Document Name *</label>
+                        <select id="doc-name" name="doc-name" required class="form-input">
+                            <option value="">Select document type...</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="label">Company *</label>
+                        <select id="invoice-company" name="invoice-company" required class="form-input" onchange="onCompanyChange()">
+                            <option value="">Select company...</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="label">Materials *</label>
+                        <div id="items-container"></div>
+                        <button type="button" onclick="addItemRow()" class="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium">+ Add another material</button>
+                    </div>
+                    <div class="form-actions">
+                        <a href="invoices.html" class="btn-secondary">Cancel</a>
+                        <button type="submit" class="btn-primary" style="width:auto;padding:0.5rem 1.5rem;">Create</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script src="js/rabbit-table.js"></script>
+    <script src="js/rabbit-search.js"></script>
+    <script src="js/rabbit-card.js"></script>
+    <script>
+        (async function() {
+            const user = await requireAuth();
+            if (!user) return;
+            if (!hasFeature('invoiceManagement')) { window.location.href = 'invoices.html'; return; }
+            renderSidebar('invoices');
+        })();
+
+        let companies = [];
+        let allMaterials = [];
+        let allDocumentTypes = [];
+
+        async function loadData() {
+            try {
+                const companyResult = await apiGet('/companies');
+                companies = (companyResult && companyResult.status === 200) ? (companyResult.data || []) : [];
+
+                const matResult = await apiGet('/materials');
+                allMaterials = (matResult && matResult.status === 200) ? (matResult.data || []) : [];
+
+                for (const c of companies) {
+                    setCompanyId(c.companyId);
+                    const docResult = await apiCall('GET', '/companies/' + c.companyId + '/document-types');
+                    setCompanyId(null);
+                    if (docResult && docResult.status === 200) {
+                        (docResult.data || []).forEach(dt => {
+                            allDocumentTypes.push({ ...dt, companyName: c.name, companyId: c.companyId });
+                        });
+                    }
+                }
+
+                renderCompanySelect();
+                renderDocNameSelect();
+                addItemRow();
+            } catch (err) {
+                document.getElementById('form-error').textContent = err.message || 'Failed to load data';
+                document.getElementById('form-error').classList.remove('hidden');
+            }
+        }
+
+        function renderCompanySelect() {
+            const select = document.getElementById('invoice-company');
+            companies.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.companyId;
+                opt.textContent = c.name;
+                select.appendChild(opt);
+            });
+        }
+
+        function renderDocNameSelect() {
+            const select = document.getElementById('doc-name');
+            allDocumentTypes.forEach(dt => {
+                const opt = document.createElement('option');
+                opt.value = dt.name;
+                opt.textContent = dt.name + (dt.documentNumber ? ' (' + dt.documentNumber + ')' : '') + ' - ' + dt.companyName;
+                select.appendChild(opt);
+            });
+        }
+
+        function getCompanyMaterials() {
+            const companyId = document.getElementById('invoice-company').value;
+            if (!companyId) return [];
+            return allMaterials.filter(m => m.companies && m.companies.some(c => c.companyId === companyId));
+        }
+
+        function onCompanyChange() {
+            const container = document.getElementById('items-container');
+            container.innerHTML = '';
+            addItemRow();
+        }
+
+        function addItemRow() {
+            const container = document.getElementById('items-container');
+            const idx = container.children.length;
+
+            const row = document.createElement('div');
+            row.className = 'flex gap-2 mb-2 items-end item-row';
+            row.dataset.index = idx;
+
+            const materials = getCompanyMaterials();
+            const materialOpts = '<option value="">Select material...</option>' +
+                materials.map(m => '<option value="' + m.materialId + '">' + escapeHtml(m.name) + '</option>').join('');
+
+            row.innerHTML =
+                '<div class="flex-1">' +
+                    '<select class="form-input item-material" onchange="onItemMaterialChange(' + idx + ')" required>' +
+                        materialOpts +
+                    '</select>' +
+                '</div>' +
+                '<div class="flex-1">' +
+                    '<select class="form-input item-identifier" required>' +
+                        '<option value="">Select identifier...</option>' +
+                    '</select>' +
+                '</div>' +
+                (idx > 0 ? '<button type="button" onclick="removeItemRow(this)" class="text-red-500 hover:text-red-700 p-2" title="Remove"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>' : '<div style="width:2.5rem;"></div>');
+
+            container.appendChild(row);
+        }
+
+        function onItemMaterialChange(idx) {
+            const container = document.getElementById('items-container');
+            const row = container.children[idx];
+            const materialId = row.querySelector('.item-material').value;
+            const identifierSelect = row.querySelector('.item-identifier');
+            identifierSelect.innerHTML = '<option value="">Select identifier...</option>';
+
+            if (!materialId) return;
+
+            const material = allMaterials.find(m => m.materialId === materialId);
+            if (material && material.identifiers) {
+                material.identifiers.forEach(id => {
+                    const opt = document.createElement('option');
+                    opt.value = typeof id === 'string' ? id : id.name;
+                    opt.textContent = typeof id === 'string' ? id : id.name;
+                    identifierSelect.appendChild(opt);
+                });
+            }
+        }
+
+        function removeItemRow(btn) {
+            btn.closest('.item-row').remove();
+        }
+
+        document.getElementById('invoice-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const errorEl = document.getElementById('form-error');
+            errorEl.classList.add('hidden');
+
+            const documentNumber = document.getElementById('doc-number').value.trim();
+            const documentName = document.getElementById('doc-name').value;
+            const companyId = document.getElementById('invoice-company').value;
+
+            if (!documentNumber) {
+                errorEl.textContent = 'Document number is required';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            if (!documentName) {
+                errorEl.textContent = 'Document name is required';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            if (!companyId) {
+                errorEl.textContent = 'Company is required';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            const rows = document.querySelectorAll('.item-row');
+            const items = [];
+            rows.forEach(row => {
+                const materialId = row.querySelector('.item-material').value;
+                const identifierName = row.querySelector('.item-identifier').value;
+                if (materialId && identifierName) {
+                    const material = allMaterials.find(m => m.materialId === materialId);
+                    items.push({
+                        materialName: material ? material.name : '',
+                        identifierName
+                    });
+                }
+            });
+
+            if (items.length === 0) {
+                errorEl.textContent = 'Please add at least one material with identifier';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            const company = companies.find(c => c.companyId === companyId);
+
+            try {
+                const result = await apiPost('/invoices', {
+                    documentNumber,
+                    documentName,
+                    companyName: company ? company.name : '',
+                    items
+                });
+                if (result && (result.status === 200 || result.status === 201)) {
+                    window.location.href = 'invoices.html';
+                } else if (result && result.status === 401) {
+                    clearAuth();
+                    window.location.href = 'login.html';
+                } else {
+                    errorEl.textContent = (result && result.data && (result.data.error || result.data.message)) || 'Failed to create invoice';
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (err) {
+                errorEl.textContent = err.message || 'Failed to create invoice';
+                errorEl.classList.remove('hidden');
+            }
+        });
+
+        loadData();
+    </script>
+</body>
+</html>

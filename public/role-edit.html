@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Role - Rabbit Invoice</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <div class="layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div class="page-header">
+                <a href="roles.html" class="back-link">&larr; Back to Roles</a>
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-gray-900">Edit Role</h2>
+                </div>
+            </div>
+            <div class="form-card">
+                <div id="form-error" class="hidden global-error"></div>
+                <div id="loading" class="text-center py-8">
+                    <div class="spinner mx-auto mb-4" style="width:2rem;height:2rem;border-width:3px;border-color:var(--carrot);border-right-color:transparent;"></div>
+                    <p class="text-gray-500">Loading role...</p>
+                </div>
+                <form id="editRoleForm" onsubmit="handleSubmit(event)" class="hidden">
+                    <div class="mb-4">
+                        <label class="label">Company *</label>
+                        <select id="role-company" class="form-input" required disabled>
+                            <option value="">Select company...</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="label">Role Name *</label>
+                        <input type="text" id="role-name" class="form-input" placeholder="e.g. Manager" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="label">Description</label>
+                        <textarea id="role-description" class="form-input" rows="2" placeholder="Brief description"></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="label">Permissions *</label>
+                        <div id="permissions-container" class="grid grid-cols-2 gap-2 mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <a href="roles.html" class="btn-secondary">Cancel</a>
+                        <button type="submit" class="btn-primary" style="width:auto;padding:0.5rem 1.5rem;" id="submitBtn">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script src="js/rabbit-table.js"></script>
+    <script src="js/rabbit-search.js"></script>
+    <script src="js/rabbit-card.js"></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const roleId = params.get('roleId');
+        if (!roleId) { window.location.href = 'roles.html'; }
+
+        let permissionsData = [];
+        let roleData = null;
+
+        (async function() {
+            renderSidebar('roles');
+            const user = await requireAuth();
+            if (!user) return;
+            const isSuperAdmin = (user.companies || []).some(c => c.role && c.role.name === 'SUPER_ADMIN');
+            if (!isSuperAdmin) { window.location.href = 'dashboard.html'; return; }
+            let features = {};
+            (user.companies || []).forEach(c => {
+                if (c.features && c.features.userFeature) features.userFeature = true;
+                if (c.features && c.features.invoiceManagement) features.invoiceManagement = true;
+            });
+            if (!features.userFeature) { window.location.href = 'dashboard.html'; return; }
+            showAdminNavLinks(features);
+
+            const companyResult = await apiCall('GET', '/companies');
+            const companies = (companyResult && companyResult.status === 200) ? (companyResult.data || []) : [];
+
+            const companySelect = document.getElementById('role-company');
+            companies.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.companyId;
+                opt.textContent = c.name;
+                companySelect.appendChild(opt);
+            });
+
+            for (const c of companies) {
+                setCompanyId(c.companyId);
+                const rolesResult = await apiCall('GET', '/roles');
+                setCompanyId(null);
+                if (rolesResult && rolesResult.status === 200) {
+                    roleData = (rolesResult.data || []).find(r => r.roleId === roleId);
+                    if (roleData) break;
+                }
+            }
+
+            const permResult = await apiCall('GET', '/roles/permissions');
+            if (permResult && permResult.status === 200) permissionsData = permResult.data || [];
+
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('editRoleForm').classList.remove('hidden');
+
+            if (!roleData) {
+                document.getElementById('form-error').textContent = 'Role not found';
+                document.getElementById('form-error').classList.remove('hidden');
+                return;
+            }
+
+            companySelect.value = roleData.companyId || '';
+            document.getElementById('role-name').value = roleData.name || '';
+            document.getElementById('role-description').value = roleData.description || '';
+
+            const permIds = (roleData.permissions || []).map(p => p.permissionId);
+            renderPermissions(permIds);
+        })();
+
+        function renderPermissions(selectedIds) {
+            const container = document.getElementById('permissions-container');
+            container.innerHTML = '';
+            const selected = selectedIds || [];
+            const actionLabels = { read: 'View', write: 'Edit' };
+            const resourceLabels = { companies: 'Companies', users: 'Users', roles: 'Roles', documents: 'Documents', materials: 'Materials', invoices: 'Invoices' };
+            permissionsData.forEach(p => {
+                const checked = selected.includes(p.permissionId) ? 'checked' : '';
+                const resource = resourceLabels[p.resource] || p.resource;
+                const action = actionLabels[p.action] || p.action;
+                const label = resource + ': ' + action + (p.description ? ' (' + p.description + ')' : '');
+                container.innerHTML +=
+                    '<label class="flex items-center gap-2 text-sm cursor-pointer">' +
+                    '<input type="checkbox" class="perm-checkbox" value="' + p.permissionId + '" ' + checked + '>' +
+                    '<span>' + label + '</span>' +
+                    '</label>';
+            });
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            const companyId = document.getElementById('role-company').value;
+            const name = document.getElementById('role-name').value.trim();
+            const description = document.getElementById('role-description').value.trim();
+            const permissionIds = Array.from(document.querySelectorAll('.perm-checkbox:checked')).map(cb => cb.value);
+
+            if (permissionIds.length === 0) {
+                document.getElementById('form-error').textContent = 'Please select at least one permission';
+                document.getElementById('form-error').classList.remove('hidden');
+                return;
+            }
+
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            document.getElementById('form-error').classList.add('hidden');
+
+            try {
+                setCompanyId(companyId);
+                const result = await apiCall('PUT', '/roles/' + roleId, { name, description, companyId, permissionIds });
+                setCompanyId(null);
+                btn.disabled = false;
+                btn.textContent = 'Save Changes';
+                if (result && result.status === 200) {
+                    window.location.href = 'roles.html';
+                } else if (result && result.status === 401) {
+                    clearAuth(); window.location.href = 'login.html';
+                } else {
+                    document.getElementById('form-error').textContent = (result && result.data && (result.data.error || result.data.message)) || 'Failed to save role';
+                    document.getElementById('form-error').classList.remove('hidden');
+                }
+            } catch (err) {
+                btn.disabled = false;
+                btn.textContent = 'Save Changes';
+                document.getElementById('form-error').textContent = 'Unable to connect to server.';
+                document.getElementById('form-error').classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

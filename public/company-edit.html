@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Company - Rabbit Invoice</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <div class="layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div class="page-header">
+                <a href="companies.html" class="back-link">&larr; Back to Companies</a>
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-gray-900">Edit Company</h2>
+                </div>
+            </div>
+            <div class="form-card">
+                <div id="form-error" class="hidden global-error"></div>
+                <div id="loading" class="text-center py-8">
+                    <div class="spinner mx-auto mb-4" style="width:2rem;height:2rem;border-width:3px;border-color:var(--carrot);border-right-color:transparent;"></div>
+                    <p class="text-gray-500">Loading company...</p>
+                </div>
+                <form id="editCompanyForm" onsubmit="handleSubmit(event)" enctype="multipart/form-data" class="hidden">
+                    <div class="mb-4">
+                        <label class="label">Company Name</label>
+                        <input type="text" id="company-name" class="form-input" disabled>
+                        <p class="text-xs text-gray-400 mt-1">Company name cannot be changed</p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="label">Description</label>
+                        <textarea name="description" id="company-description" class="form-input" rows="2" placeholder="Brief description"></textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="label">Address Line 1</label>
+                            <input type="text" name="addressLine1" id="company-address1" class="form-input" placeholder="123 Main St">
+                        </div>
+                        <div>
+                            <label class="label">Address Line 2</label>
+                            <input type="text" name="addressLine2" id="company-address2" class="form-input" placeholder="Suite 100">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="label">City</label>
+                            <input type="text" name="city" id="company-city" class="form-input" placeholder="Mumbai">
+                        </div>
+                        <div>
+                            <label class="label">State</label>
+                            <input type="text" name="state" id="company-state" class="form-input" placeholder="Maharashtra">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="label">Country</label>
+                            <input type="text" name="country" id="company-country" class="form-input" placeholder="India">
+                        </div>
+                        <div>
+                            <label class="label">Pin Code</label>
+                            <input type="text" name="pinCode" id="company-pin" class="form-input" maxlength="6" pattern="[0-9]{6}" placeholder="400001">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="label">Contact Number</label>
+                        <input type="text" name="contactNumber" id="company-contact" class="form-input" maxlength="10" placeholder="9876543210">
+                    </div>
+                    <div class="mb-4">
+                        <label class="label">Logo</label>
+                        <input type="file" name="logo" accept="image/*" class="form-input">
+                        <p class="text-xs text-gray-400 mt-1">Max 50KB. Supported: JPG, PNG, SVG</p>
+                    </div>
+                    <div class="form-actions">
+                        <a href="companies.html" class="btn-secondary">Cancel</a>
+                        <button type="submit" class="btn-primary" style="width:auto;padding:0.5rem 1.5rem;" id="submitBtn">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script src="js/rabbit-table.js"></script>
+    <script src="js/rabbit-search.js"></script>
+    <script src="js/rabbit-card.js"></script>
+    <script src="js/rabbit-actions.js"></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const companyId = params.get('companyId');
+        if (!companyId) { window.location.href = 'companies.html'; }
+
+        (async function() {
+            renderSidebar('companies');
+            const user = await requireAuth();
+            if (!user) return;
+            const isSuperAdmin = (user.companies || []).some(c => c.role && c.role.name === 'SUPER_ADMIN');
+            if (!isSuperAdmin) { window.location.href = 'dashboard.html'; return; }
+            showAdminNavLinks({});
+
+            try {
+                setCompanyId(companyId);
+                const result = await apiCall('GET', '/companies/' + companyId);
+                setCompanyId(null);
+
+                document.getElementById('loading').classList.add('hidden');
+
+                if (!result || result.status !== 200) {
+                    document.getElementById('form-error').textContent = 'Company not found';
+                    document.getElementById('form-error').classList.remove('hidden');
+                    return;
+                }
+
+                const company = result.data;
+                document.getElementById('company-name').value = company.name || '';
+                document.getElementById('company-description').value = company.description || '';
+                document.getElementById('company-address1').value = company.addressLine1 || '';
+                document.getElementById('company-address2').value = company.addressLine2 || '';
+                document.getElementById('company-city').value = company.city || '';
+                document.getElementById('company-state').value = company.state || '';
+                document.getElementById('company-country').value = company.country || '';
+                document.getElementById('company-pin').value = company.pinCode || '';
+                document.getElementById('company-contact').value = company.contactNumber || '';
+
+                document.getElementById('editCompanyForm').classList.remove('hidden');
+            } catch (err) {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('form-error').textContent = err.message || 'Failed to load company';
+                document.getElementById('form-error').classList.remove('hidden');
+            }
+        })();
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            document.getElementById('form-error').classList.add('hidden');
+
+            const form = document.getElementById('editCompanyForm');
+            const formData = new FormData(form);
+
+            try {
+                const token = getToken();
+                const response = await fetch(API_BASE + '/companies/' + companyId, {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+                const data = await response.json().catch(() => null);
+
+                btn.disabled = false;
+                btn.textContent = 'Save Changes';
+
+                if (response.status === 200) {
+                    window.location.href = 'companies.html';
+                } else if (response.status === 401) {
+                    clearAuth();
+                    window.location.href = 'login.html';
+                } else {
+                    document.getElementById('form-error').textContent = (data && (data.error || data.message)) || 'Failed to update company';
+                    document.getElementById('form-error').classList.remove('hidden');
+                }
+            } catch (err) {
+                btn.disabled = false;
+                btn.textContent = 'Save Changes';
+                document.getElementById('form-error').textContent = 'Unable to connect to server.';
+                document.getElementById('form-error').classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

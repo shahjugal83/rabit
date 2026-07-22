@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Material - Rabbit Invoice</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <div class="layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div class="page-header">
+                <a href="materials.html" class="back-link">&larr; Back to Materials</a>
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-gray-900">Create Material</h2>
+                </div>
+            </div>
+            <div class="form-card">
+                <div id="form-error" class="hidden global-error"></div>
+                <form id="material-form">
+                    <div class="mb-4">
+                        <label class="label">Material Name *</label>
+                        <input type="text" id="material-name" name="material-name" required class="form-input" placeholder="e.g. Cement, Steel Rod">
+                    </div>
+                    <div class="mb-4">
+                        <label class="label">Companies *</label>
+                        <div id="companies-checkboxes" class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded p-2">
+                            <span class="text-gray-400 text-sm">Loading companies...</span>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="label">Identifiers</label>
+                        <div class="flex gap-2">
+                            <select id="identifier-select" class="form-input" style="flex:1;">
+                                <option value="KG">KG</option>
+                                <option value="G">G</option>
+                                <option value="Ltr">Ltr</option>
+                                <option value="Unit">Unit</option>
+                                <option value="Mt">Mt</option>
+                                <option value="Bag">Bag</option>
+                                <option value="Pcs">Pcs</option>
+                                <option value="Box">Box</option>
+                                <option value="Roll">Roll</option>
+                                <option value="Set">Set</option>
+                            </select>
+                            <button type="button" onclick="addIdentifier()" class="btn-secondary">Add</button>
+                        </div>
+                        <div id="identifiers-list" class="flex flex-wrap gap-2 mt-2"></div>
+                    </div>
+                    <div class="form-actions">
+                        <a href="materials.html" class="btn-secondary">Cancel</a>
+                        <button type="submit" class="btn-primary" style="width:auto;padding:0.5rem 1.5rem;">Create</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script src="js/rabbit-table.js"></script>
+    <script src="js/rabbit-search.js"></script>
+    <script src="js/rabbit-card.js"></script>
+    <script>
+        (async function() {
+            const user = await requireAuth();
+            if (!user) return;
+            if (!hasFeature('invoiceManagement')) { window.location.href = 'materials.html'; return; }
+            renderSidebar('materials');
+        })();
+
+        let companies = [];
+        let selectedIdentifiers = [];
+
+        async function loadCompanies() {
+            try {
+                const result = await apiGet('/companies');
+                companies = (result && result.status === 200) ? (result.data || []) : [];
+                renderCompanyCheckboxes();
+            } catch (err) {
+                document.getElementById('form-error').textContent = err.message || 'Failed to load companies';
+                document.getElementById('form-error').classList.remove('hidden');
+            }
+        }
+
+        function renderCompanyCheckboxes() {
+            const container = document.getElementById('companies-checkboxes');
+            if (companies.length === 0) {
+                container.innerHTML = '<span class="text-gray-400 text-sm">No companies found</span>';
+                return;
+            }
+            container.innerHTML = companies.map(c =>
+                '<label class="flex items-center gap-2 text-sm cursor-pointer">' +
+                '<input type="checkbox" name="company" value="' + c.companyId + '" class="rounded border-gray-300 text-blue-600">' +
+                escapeHtml(c.name) +
+                '</label>'
+            ).join('');
+        }
+
+        function addIdentifier() {
+            const select = document.getElementById('identifier-select');
+            const name = select.value;
+            if (name && !selectedIdentifiers.includes(name)) {
+                selectedIdentifiers.push(name);
+                renderIdentifiersList();
+            }
+        }
+
+        function removeIdentifier(name) {
+            selectedIdentifiers = selectedIdentifiers.filter(i => i !== name);
+            renderIdentifiersList();
+        }
+
+        function renderIdentifiersList() {
+            const container = document.getElementById('identifiers-list');
+            container.innerHTML = selectedIdentifiers.map(name =>
+                '<span class="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">' +
+                escapeHtml(name) +
+                '<button type="button" onclick="removeIdentifier(\'' + name + '\')" class="text-blue-600 hover:text-blue-900 font-bold">&times;</button>' +
+                '</span>'
+            ).join('');
+        }
+
+        document.getElementById('material-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const errorEl = document.getElementById('form-error');
+            errorEl.classList.add('hidden');
+
+            const name = document.getElementById('material-name').value.trim();
+            const companyIds = Array.from(document.querySelectorAll('input[name="company"]:checked')).map(cb => cb.value);
+
+            if (!name) {
+                errorEl.textContent = 'Material name is required';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            if (companyIds.length === 0) {
+                errorEl.textContent = 'Please select at least one company';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const result = await apiPost('/materials', { name, companyIds, identifiers: selectedIdentifiers });
+                if (result && (result.status === 200 || result.status === 201)) {
+                    window.location.href = 'materials.html';
+                } else if (result && result.status === 401) {
+                    clearAuth();
+                    window.location.href = 'login.html';
+                } else {
+                    errorEl.textContent = (result && result.data && (result.data.error || result.data.message)) || 'Failed to create material';
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (err) {
+                errorEl.textContent = err.message || 'Failed to create material';
+                errorEl.classList.remove('hidden');
+            }
+        });
+
+        loadCompanies();
+    </script>
+</body>
+</html>

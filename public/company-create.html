@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Company - Rabbit Invoice</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <div class="layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div class="page-header">
+                <a href="companies.html" class="back-link">&larr; Back to Companies</a>
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-gray-900">Create Company</h2>
+                </div>
+            </div>
+            <div class="form-card">
+                <div id="form-error" class="hidden global-error"></div>
+                <form id="createCompanyForm" onsubmit="handleSubmit(event)" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <label class="label">Company Name *</label>
+                        <input type="text" name="name" required class="form-input" placeholder="Acme Corp">
+                    </div>
+                    <div class="mb-4">
+                        <label class="label">Description</label>
+                        <textarea name="aboutCompany" class="form-input" rows="2" placeholder="Brief description"></textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="label">Address Line 1 *</label>
+                            <input type="text" name="addressLine1" required class="form-input" placeholder="123 Main St">
+                        </div>
+                        <div>
+                            <label class="label">Address Line 2</label>
+                            <input type="text" name="addressLine2" class="form-input" placeholder="Suite 100">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="label">City *</label>
+                            <input type="text" name="city" required class="form-input" placeholder="Mumbai">
+                        </div>
+                        <div>
+                            <label class="label">State *</label>
+                            <input type="text" name="state" required class="form-input" placeholder="Maharashtra">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="label">Country *</label>
+                            <input type="text" name="country" required class="form-input" placeholder="India">
+                        </div>
+                        <div>
+                            <label class="label">Pin Code *</label>
+                            <input type="text" name="pinCode" required class="form-input" maxlength="6" pattern="[0-9]{6}" placeholder="400001">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="label">Contact Number *</label>
+                        <input type="text" name="contactNumber" required class="form-input" maxlength="10" placeholder="9876543210">
+                    </div>
+                    <div class="mb-4">
+                        <label class="label">Logo</label>
+                        <input type="file" name="logo" accept="image/*" class="form-input">
+                        <p class="text-xs text-gray-400 mt-1">Max 50KB. Supported: JPG, PNG, SVG</p>
+                    </div>
+                    <div class="form-actions">
+                        <a href="companies.html" class="btn-secondary">Cancel</a>
+                        <button type="submit" class="btn-primary" style="width:auto;padding:0.5rem 1.5rem;" id="submitBtn">Create Company</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script src="js/rabbit-table.js"></script>
+    <script src="js/rabbit-search.js"></script>
+    <script src="js/rabbit-card.js"></script>
+    <script>
+        (async function() {
+            renderSidebar('companies');
+            const user = await requireAuth();
+            if (!user) return;
+            const isSuperAdmin = (user.companies || []).some(c => c.role && c.role.name === 'SUPER_ADMIN');
+            if (!isSuperAdmin) { window.location.href = 'dashboard.html'; return; }
+            let features = {};
+            (user.companies || []).forEach(c => {
+                if (c.features && c.features.userFeature) features.userFeature = true;
+                if (c.features && c.features.invoiceManagement) features.invoiceManagement = true;
+            });
+            showAdminNavLinks(features);
+        })();
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+            document.getElementById('form-error').classList.add('hidden');
+
+            const form = document.getElementById('createCompanyForm');
+            const formData = new FormData(form);
+
+            try {
+                const token = getToken();
+                const response = await fetch(API_BASE + '/companies', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+                const data = await response.json().catch(() => null);
+
+                btn.disabled = false;
+                btn.textContent = 'Create Company';
+
+                if (response.status === 201 || response.status === 200) {
+                    window.location.href = 'companies.html';
+                } else if (response.status === 401) {
+                    clearAuth();
+                    window.location.href = 'login.html';
+                } else {
+                    document.getElementById('form-error').textContent = (data && (data.error || data.message)) || 'Failed to create company';
+                    document.getElementById('form-error').classList.remove('hidden');
+                }
+            } catch (err) {
+                btn.disabled = false;
+                btn.textContent = 'Create Company';
+                document.getElementById('form-error').textContent = 'Unable to connect to server.';
+                document.getElementById('form-error').classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

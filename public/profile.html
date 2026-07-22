@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Rabbit Invoice</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <div class="layout">
+        <div id="sidebar-container"></div>
+
+        <div class="main-content">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-gray-900">My Profile</h2>
+                <div class="flex items-center gap-3">
+                    <span id="user-name" class="text-sm text-gray-600"></span>
+                    <span id="user-initials" class="w-8 h-8 rounded-full text-white text-xs font-medium flex items-center justify-center" style="background-color:var(--carrot);"></span>
+                </div>
+            </div>
+
+            <div id="loading" class="text-center py-12">
+                <div class="spinner mx-auto mb-4" style="width:2rem;height:2rem;border-width:3px;border-color:var(--carrot);border-right-color:transparent;"></div>
+                <p class="text-gray-500">Loading profile...</p>
+            </div>
+
+            <div id="profile-content" class="hidden space-y-6">
+                <div class="detail-card">
+                    <div class="detail-card-header">
+                        <h3>Personal Information</h3>
+                    </div>
+                    <div class="detail-card-body">
+                        <div id="profile-success" class="hidden global-success mb-4"></div>
+                        <div id="profile-error" class="hidden global-error mb-4"></div>
+                        <form id="profileForm" onsubmit="handleProfileUpdate(event)">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="label">First Name</label>
+                                    <input type="text" id="firstName" class="form-input" placeholder="John">
+                                </div>
+                                <div>
+                                    <label class="label">Last Name</label>
+                                    <input type="text" id="lastName" class="form-input" placeholder="Doe">
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <label class="label">Email</label>
+                                <input type="email" id="email" class="form-input" disabled style="background:#f9fafb;">
+                            </div>
+                            <div class="mb-4">
+                                <label class="label">Username</label>
+                                <input type="text" id="username" class="form-input" disabled style="background:#f9fafb;">
+                            </div>
+                            <div class="mb-4">
+                                <label class="label">Address Line 1</label>
+                                <input type="text" id="addressLine1" class="form-input" placeholder="123 Main St">
+                            </div>
+                            <div class="mb-4">
+                                <label class="label">Address Line 2</label>
+                                <input type="text" id="addressLine2" class="form-input" placeholder="Suite 100">
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="label">City</label>
+                                    <input type="text" id="city" class="form-input" placeholder="Mumbai">
+                                </div>
+                                <div>
+                                    <label class="label">State</label>
+                                    <input type="text" id="state" class="form-input" placeholder="Maharashtra">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                                <div>
+                                    <label class="label">Country</label>
+                                    <input type="text" id="country" class="form-input" placeholder="India">
+                                </div>
+                                <div>
+                                    <label class="label">PIN Code</label>
+                                    <input type="text" id="pinCode" class="form-input" placeholder="400001">
+                                </div>
+                            </div>
+                            <div class="flex justify-end">
+                                <button type="submit" class="btn-primary" style="width:auto;padding:0.5rem 1.5rem;" id="profileBtn">
+                                    Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="detail-card">
+                    <div class="detail-card-header">
+                        <h3>Change Password</h3>
+                    </div>
+                    <div class="detail-card-body">
+                        <div id="password-success" class="hidden global-success mb-4"></div>
+                        <div id="password-error" class="hidden global-error mb-4"></div>
+                        <form id="passwordForm" onsubmit="handlePasswordChange(event)">
+                            <div class="mb-4">
+                                <label class="label">Current Password *</label>
+                                <input type="password" id="currentPassword" class="form-input" required placeholder="Enter current password">
+                            </div>
+                            <div class="mb-4">
+                                <label class="label">New Password *</label>
+                                <input type="password" id="newPassword" class="form-input" required placeholder="Min 8 characters" minlength="8">
+                                <p class="text-xs text-gray-400 mt-1">Min 8 chars with uppercase, lowercase, digit, and special character</p>
+                            </div>
+                            <div class="mb-6">
+                                <label class="label">Confirm New Password *</label>
+                                <input type="password" id="confirmNewPassword" class="form-input" required placeholder="Confirm new password">
+                            </div>
+                            <div class="flex justify-end">
+                                <button type="submit" class="btn-primary" style="width:auto;padding:0.5rem 1.5rem;" id="passwordBtn">
+                                    Change Password
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="detail-card">
+                    <div class="detail-card-header">
+                        <h3>Account Details</h3>
+                    </div>
+                    <div class="detail-card-body">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="info-box">
+                                <p class="info-box-label">Status</p>
+                                <p id="account-status" class="info-box-value"></p>
+                            </div>
+                            <div class="info-box">
+                                <p class="info-box-label">Email Verified</p>
+                                <p id="email-verified" class="info-box-value"></p>
+                            </div>
+                            <div class="info-box">
+                                <p class="info-box-label">Member Since</p>
+                                <p id="created-at" class="info-box-value"></p>
+                            </div>
+                            <div class="info-box">
+                                <p class="info-box-label">Companies</p>
+                                <p id="company-count" class="info-box-value"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script>
+        if (!isLoggedIn()) { window.location.href = 'login.html'; } else {
+            renderSidebar('profile');
+
+        (async function() {
+            const result = await apiCall('GET', '/auth/me');
+            document.getElementById('loading').classList.add('hidden');
+
+            if (!result || result.status !== 200) {
+                if (result && result.status === 0) {
+                    document.getElementById('loading').innerHTML = '<p class="text-red-500">Unable to connect to server.</p>';
+                    document.getElementById('loading').classList.remove('hidden');
+                } else {
+                    clearAuth();
+                    window.location.href = 'login.html';
+                }
+                return;
+            }
+
+            const user = result.data;
+            document.getElementById('profile-content').classList.remove('hidden');
+
+            document.getElementById('firstName').value = user.firstName || '';
+            document.getElementById('lastName').value = user.lastName || '';
+            document.getElementById('email').value = user.email || '';
+            document.getElementById('username').value = user.username || '';
+            document.getElementById('addressLine1').value = user.addressLine1 || '';
+            document.getElementById('addressLine2').value = user.addressLine2 || '';
+            document.getElementById('city').value = user.city || '';
+            document.getElementById('state').value = user.state || '';
+            document.getElementById('country').value = user.country || '';
+            document.getElementById('pinCode').value = user.pinCode || '';
+
+            document.getElementById('user-name').textContent = user.firstName
+                ? user.firstName + ' ' + (user.lastName || '')
+                : user.username;
+
+            const first = (user.firstName || user.username || '').charAt(0).toUpperCase();
+            const last = (user.lastName || '').charAt(0).toUpperCase();
+            document.getElementById('user-initials').textContent = first + last;
+
+            document.getElementById('account-status').textContent = user.status || '-';
+            document.getElementById('email-verified').textContent = user.emailVerified ? 'Yes' : 'No';
+            document.getElementById('created-at').textContent = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-';
+            document.getElementById('company-count').textContent = (user.companies || []).length;
+
+            const isSuperAdmin = (user.companies || []).some(c => c.role && c.role.name === 'SUPER_ADMIN');
+            if (isSuperAdmin) {
+                let features = {};
+                (user.companies || []).forEach(c => {
+                    if (c.features && c.features.userFeature) features.userFeature = true;
+                    if (c.features && c.features.invoiceManagement) features.invoiceManagement = true;
+                });
+                showAdminNavLinks(features);
+            }
+        })();
+        }
+
+        async function handleProfileUpdate(e) {
+            e.preventDefault();
+            const btn = document.getElementById('profileBtn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            document.getElementById('profile-success').classList.add('hidden');
+            document.getElementById('profile-error').classList.add('hidden');
+
+            const body = {
+                firstName: document.getElementById('firstName').value.trim(),
+                lastName: document.getElementById('lastName').value.trim(),
+                addressLine1: document.getElementById('addressLine1').value.trim(),
+                addressLine2: document.getElementById('addressLine2').value.trim(),
+                city: document.getElementById('city').value.trim(),
+                state: document.getElementById('state').value.trim(),
+                country: document.getElementById('country').value.trim(),
+                pinCode: document.getElementById('pinCode').value.trim(),
+            };
+
+            const result = await apiCall('PUT', '/auth/profile', body);
+
+            btn.disabled = false;
+            btn.textContent = 'Save Changes';
+
+            if (!result) return;
+
+            if (result.status === 200) {
+                document.getElementById('profile-success').textContent = 'Profile updated successfully.';
+                document.getElementById('profile-success').classList.remove('hidden');
+            } else if (result.status === 401) {
+                clearAuth();
+                window.location.href = 'login.html';
+            } else {
+                document.getElementById('profile-error').textContent = (result.data && result.data.message) || 'Failed to update profile.';
+                document.getElementById('profile-error').classList.remove('hidden');
+            }
+        }
+
+        async function handlePasswordChange(e) {
+            e.preventDefault();
+            const btn = document.getElementById('passwordBtn');
+            const currentPw = document.getElementById('currentPassword').value;
+            const newPw = document.getElementById('newPassword').value;
+            const confirmPw = document.getElementById('confirmNewPassword').value;
+
+            document.getElementById('password-success').classList.add('hidden');
+            document.getElementById('password-error').classList.add('hidden');
+
+            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+            if (!passwordRegex.test(newPw)) {
+                document.getElementById('password-error').textContent = 'Password must be min 8 chars with uppercase, lowercase, digit, and special character.';
+                document.getElementById('password-error').classList.remove('hidden');
+                return;
+            }
+
+            if (newPw !== confirmPw) {
+                document.getElementById('password-error').textContent = 'New passwords do not match.';
+                document.getElementById('password-error').classList.remove('hidden');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Changing...';
+
+            const result = await apiCall('POST', '/auth/change-password', {
+                currentPassword: currentPw,
+                newPassword: newPw
+            });
+
+            btn.disabled = false;
+            btn.textContent = 'Change Password';
+
+            if (!result) return;
+
+            if (result.status === 200) {
+                document.getElementById('password-success').textContent = 'Password changed successfully.';
+                document.getElementById('password-success').classList.remove('hidden');
+                document.getElementById('passwordForm').reset();
+            } else if (result.status === 401) {
+                clearAuth();
+                window.location.href = 'login.html';
+            } else {
+                document.getElementById('password-error').textContent = (result.data && result.data.message) || 'Failed to change password.';
+                document.getElementById('password-error').classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

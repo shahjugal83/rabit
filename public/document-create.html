@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Document Type - Rabbit Invoice</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <div class="layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div class="page-header">
+                <a href="documents.html" class="back-link">&larr; Back to Documents</a>
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-gray-900">Add Document Type</h2>
+                </div>
+            </div>
+            <div class="form-card">
+                <div id="form-error" class="hidden global-error"></div>
+                <form id="createDocForm" onsubmit="handleSubmit(event)">
+                    <div class="mb-4">
+                        <label class="label">Document Type Name *</label>
+                        <input type="text" id="doc-name" class="form-input" placeholder="e.g. Tax Invoice" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="label">Document Number</label>
+                        <input type="text" id="doc-number" class="form-input" placeholder="e.g. INV-001">
+                    </div>
+                    <div class="form-actions">
+                        <a href="documents.html" class="btn-secondary">Cancel</a>
+                        <button type="submit" class="btn-primary" style="width:auto;padding:0.5rem 1.5rem;" id="submitBtn">Create</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script src="js/rabbit-table.js"></script>
+    <script src="js/rabbit-search.js"></script>
+    <script src="js/rabbit-card.js"></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const companyId = params.get('companyId');
+        if (!companyId) { window.location.href = 'documents.html'; }
+
+        (async function() {
+            renderSidebar('documents');
+            const user = await requireAuth();
+            if (!user) return;
+            const isSuperAdmin = (user.companies || []).some(c => c.role && c.role.name === 'SUPER_ADMIN');
+            if (!isSuperAdmin) { window.location.href = 'dashboard.html'; return; }
+            showAdminNavLinks({});
+        })();
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+            document.getElementById('form-error').classList.add('hidden');
+
+            const body = {
+                name: document.getElementById('doc-name').value.trim(),
+                documentNumber: document.getElementById('doc-number').value.trim() || null
+            };
+
+            try {
+                setCompanyId(companyId);
+                const result = await apiCall('POST', '/companies/' + companyId + '/document-types', body);
+                setCompanyId(null);
+                btn.disabled = false;
+                btn.textContent = 'Create';
+                if (result && (result.status === 200 || result.status === 201)) {
+                    window.location.href = 'documents.html';
+                } else if (result && result.status === 401) {
+                    clearAuth(); window.location.href = 'login.html';
+                } else {
+                    document.getElementById('form-error').textContent = (result && result.data && (result.data.error || result.data.message)) || 'Failed to create document type';
+                    document.getElementById('form-error').classList.remove('hidden');
+                }
+            } catch (err) {
+                btn.disabled = false;
+                btn.textContent = 'Create';
+                document.getElementById('form-error').textContent = 'Unable to connect to server.';
+                document.getElementById('form-error').classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

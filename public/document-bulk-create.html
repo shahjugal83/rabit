@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Create Document Types - Rabbit Invoice</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <div class="layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div class="page-header">
+                <a href="documents.html" class="back-link">&larr; Back to Documents</a>
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-gray-900">Bulk Create Document Types</h2>
+                </div>
+            </div>
+            <div class="form-card">
+                <div id="form-error" class="hidden global-error"></div>
+                <form id="bulk-create-form" class="space-y-4">
+                    <div>
+                        <label for="document-names" class="label">Document Type Names * (one per line)</label>
+                        <textarea id="document-names" name="document-names" rows="6" required
+                            class="form-input"
+                            placeholder="Tax Invoice&#10;Proforma Invoice&#10;Credit Note&#10;Debit Note"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <a href="documents.html" class="btn-secondary">Cancel</a>
+                        <button type="submit" class="btn-primary">Create All</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script src="js/rabbit-table.js"></script>
+    <script src="js/rabbit-search.js"></script>
+    <script src="js/rabbit-card.js"></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const companyId = params.get('companyId');
+        if (!companyId) {
+            window.location.href = 'documents.html';
+        }
+
+        (async function() {
+            renderSidebar('documents');
+            const user = await requireAuth();
+            if (!user) return;
+            const isSuperAdmin = (user.companies || []).some(c => c.role && c.role.name === 'SUPER_ADMIN');
+            if (!isSuperAdmin) { window.location.href = 'documents.html'; return; }
+        })();
+
+        document.getElementById('bulk-create-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const errorEl = document.getElementById('form-error');
+            errorEl.classList.add('hidden');
+
+            const raw = document.getElementById('document-names').value;
+            const names = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+            if (names.length === 0) {
+                errorEl.textContent = 'Enter at least one document name';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                setCompanyId(companyId);
+                const result = await apiPost('/companies/' + companyId + '/document-types/bulk', { names });
+                setCompanyId(null);
+                if (result && (result.status === 200 || result.status === 201)) {
+                    window.location.href = 'documents.html';
+                } else if (result && result.status === 401) {
+                    clearAuth();
+                    window.location.href = 'login.html';
+                } else {
+                    errorEl.textContent = (result && result.data && (result.data.error || result.data.message)) || 'Failed to create document types';
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (err) {
+                setCompanyId(null);
+                errorEl.textContent = err.message || 'Failed to create document types';
+                errorEl.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

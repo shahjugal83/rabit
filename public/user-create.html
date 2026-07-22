@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add User - Rabbit Invoice</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <div class="layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div class="page-header">
+                <a href="users.html" class="back-link">&larr; Back to Users</a>
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-gray-900">Add User</h2>
+                </div>
+            </div>
+            <div class="form-card">
+                <div id="form-error" class="hidden global-error"></div>
+                <form id="addUserForm" onsubmit="handleSubmit(event)">
+                    <div class="mb-4">
+                        <label class="label">Company *</label>
+                        <select id="user-company" class="form-input" required onchange="onCompanyChange()">
+                            <option value="">Select company...</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="label">Email *</label>
+                        <input type="email" id="user-email" class="form-input" placeholder="user@example.com" required>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="label">First Name</label>
+                            <input type="text" id="user-firstName" class="form-input" placeholder="John">
+                        </div>
+                        <div>
+                            <label class="label">Last Name</label>
+                            <input type="text" id="user-lastName" class="form-input" placeholder="Doe">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="label">Username *</label>
+                        <input type="text" id="user-username" class="form-input" placeholder="johndoe" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="label">Password *</label>
+                        <input type="password" id="user-password" class="form-input" placeholder="Min 8 characters" required minlength="8">
+                    </div>
+                    <div class="mb-4">
+                        <label class="label">Role *</label>
+                        <select id="user-role" class="form-input" required>
+                            <option value="">Select company first...</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <a href="users.html" class="btn-secondary">Cancel</a>
+                        <button type="submit" class="btn-primary" style="width:auto;padding:0.5rem 1.5rem;" id="submitBtn">Add User</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script src="js/rabbit-table.js"></script>
+    <script src="js/rabbit-search.js"></script>
+    <script src="js/rabbit-card.js"></script>
+    <script>
+        (async function() {
+            renderSidebar('users');
+            const user = await requireAuth();
+            if (!user) return;
+            const isSuperAdmin = (user.companies || []).some(c => c.role && c.role.name === 'SUPER_ADMIN');
+            if (!isSuperAdmin) { window.location.href = 'dashboard.html'; return; }
+            let features = {};
+            (user.companies || []).forEach(c => {
+                if (c.features && c.features.userFeature) features.userFeature = true;
+                if (c.features && c.features.invoiceManagement) features.invoiceManagement = true;
+            });
+            if (!features.userFeature) { window.location.href = 'dashboard.html'; return; }
+            showAdminNavLinks(features);
+
+            const result = await apiCall('GET', '/companies');
+            if (result && result.status === 200) {
+                const select = document.getElementById('user-company');
+                (result.data || []).forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.companyId;
+                    opt.textContent = c.name;
+                    select.appendChild(opt);
+                });
+            }
+        })();
+
+        async function onCompanyChange() {
+            const companyId = document.getElementById('user-company').value;
+            const roleSelect = document.getElementById('user-role');
+            roleSelect.innerHTML = '<option value="">Loading roles...</option>';
+            if (!companyId) { roleSelect.innerHTML = '<option value="">Select company first...</option>'; return; }
+            setCompanyId(companyId);
+            const result = await apiCall('GET', '/roles');
+            setCompanyId(null);
+            if (result && result.status === 200) {
+                roleSelect.innerHTML = '<option value="">Select role...</option>';
+                (result.data || []).forEach(r => {
+                    const opt = document.createElement('option');
+                    opt.value = r.roleId;
+                    opt.textContent = r.name;
+                    roleSelect.appendChild(opt);
+                });
+            } else {
+                roleSelect.innerHTML = '<option value="">No roles available</option>';
+            }
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            const companyId = document.getElementById('user-company').value;
+            const roleId = document.getElementById('user-role').value;
+
+            if (!roleId) {
+                document.getElementById('form-error').textContent = 'Please select a role';
+                document.getElementById('form-error').classList.remove('hidden');
+                return;
+            }
+
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Adding...';
+            document.getElementById('form-error').classList.add('hidden');
+
+            const body = {
+                email: document.getElementById('user-email').value.trim(),
+                firstName: document.getElementById('user-firstName').value.trim(),
+                lastName: document.getElementById('user-lastName').value.trim(),
+                username: document.getElementById('user-username').value.trim(),
+                password: document.getElementById('user-password').value,
+                roleId: roleId
+            };
+
+            try {
+                setCompanyId(companyId);
+                const result = await apiCall('POST', '/companies/' + companyId + '/users', body);
+                setCompanyId(null);
+                btn.disabled = false;
+                btn.textContent = 'Add User';
+                if (result && (result.status === 200 || result.status === 201)) {
+                    window.location.href = 'users.html';
+                } else if (result && result.status === 401) {
+                    clearAuth(); window.location.href = 'login.html';
+                } else {
+                    document.getElementById('form-error').textContent = (result && result.data && (result.data.error || result.data.message)) || 'Failed to add user';
+                    document.getElementById('form-error').classList.remove('hidden');
+                }
+            } catch (err) {
+                btn.disabled = false;
+                btn.textContent = 'Add User';
+                document.getElementById('form-error').textContent = 'Unable to connect to server.';
+                document.getElementById('form-error').classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

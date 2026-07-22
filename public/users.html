@@ -23,18 +23,22 @@
         <div id="sidebar-container"></div>
 
         <div class="main-content">
-            <div class="flex items-center justify-between mb-6">
+            <div class="page-header">
                 <h2 class="text-xl font-bold text-gray-900">Users</h2>
-                <button onclick="openAddModal()" class="btn-primary" style="width:auto;padding:0.5rem 1.25rem;">
+                <a href="user-create.html" class="btn-primary" style="width:auto;padding:0.5rem 1.25rem;text-decoration:none;" id="create-btn">
                     + Add User
-                </button>
+                </a>
             </div>
 
-            <div class="mb-4">
+            <div id="filter-section" class="mb-4" style="display:none;">
                 <label class="label">Filter by Company</label>
-                <select id="filter-company" class="form-input" style="max-width:20rem;" onchange="loadUsers()">
+                <select id="filter-company" class="form-input" style="max-width:20rem;" onchange="onFilterChange()">
                     <option value="">All companies</option>
                 </select>
+            </div>
+
+            <div id="error-state" class="hidden text-center py-12">
+                <p id="error-message" class="text-red-500"></p>
             </div>
 
             <div id="loading" class="text-center py-12">
@@ -46,144 +50,31 @@
                 <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                 <h3 class="text-lg font-semibold text-gray-700 mb-2">No users found</h3>
                 <p class="text-gray-500 mb-6">Add a user to get started.</p>
-                <button onclick="openAddModal()" class="btn-primary" style="width:auto;padding:0.625rem 2rem;display:inline-block;">
+                <a href="user-create.html" class="btn-primary" style="width:auto;padding:0.625rem 2rem;display:inline-block;text-decoration:none;">
                     + Add User
-                </button>
+                </a>
             </div>
 
-            <div id="search-container" class="hidden">
-                <div class="search-bar">
-                    <svg class="search-bar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    <input type="text" id="search-input" placeholder="Search users..." oninput="filterTable()">
-                </div>
-            </div>
-
-            <div id="table-wrapper" class="hidden table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="th-sortable" data-sort="username" onclick="sortTable('username')">Username</th>
-                            <th class="th-sortable" data-sort="email" onclick="sortTable('email')">Email</th>
-                            <th>Name</th>
-                            <th>Company</th>
-                            <th>Role</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="users-tbody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div id="add-modal" class="modal-overlay hidden">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 id="add-modal-title">Add User</h3>
-                <button class="modal-close" onclick="closeAddModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="modal-global-error" class="hidden global-error"></div>
-                <form id="addUserForm" onsubmit="handleAddUser(event)">
-                    <div class="mb-4">
-                        <label class="label">Company *</label>
-                        <select id="user-company" class="form-input" required onchange="onCompanyChange()">
-                            <option value="">Select company...</option>
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <label class="label">Email *</label>
-                        <input type="email" id="user-email" class="form-input" placeholder="user@example.com" required>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label class="label">First Name</label>
-                            <input type="text" id="user-firstName" class="form-input" placeholder="John">
-                        </div>
-                        <div>
-                            <label class="label">Last Name</label>
-                            <input type="text" id="user-lastName" class="form-input" placeholder="Doe">
-                        </div>
-                    </div>
-                    <div class="mb-4">
-                        <label class="label">Username *</label>
-                        <input type="text" id="user-username" class="form-input" placeholder="johndoe" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="label">Password *</label>
-                        <input type="password" id="user-password" class="form-input" placeholder="Min 8 characters" required minlength="8">
-                    </div>
-                    <div class="mb-4">
-                        <label class="label">Role *</label>
-                        <select id="user-role" class="form-input" required>
-                            <option value="">Select company first...</option>
-                        </select>
-                        <p id="user-role-error" class="field-error hidden"></p>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeAddModal()">Cancel</button>
-                <button class="btn-primary" style="width:auto;padding:0.5rem 1.5rem;" id="addUserBtn" onclick="document.getElementById('addUserForm').requestSubmit()">
-                    Add User
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div id="role-modal" class="modal-overlay hidden">
-        <div class="modal">
-            <div class="modal-header">
-                <h3>Change Role</h3>
-                <button class="modal-close" onclick="closeRoleModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="role-modal-global-error" class="hidden global-error"></div>
-                <input type="hidden" id="role-user-id">
-                <input type="hidden" id="role-company-id">
-                <div class="mb-4">
-                    <label class="label">New Role *</label>
-                    <select id="change-role-select" class="form-input" required>
-                        <option value="">Select role...</option>
-                    </select>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeRoleModal()">Cancel</button>
-                <button class="btn-primary" style="width:auto;padding:0.5rem 1.5rem;" id="changeRoleBtn" onclick="handleChangeRole()">
-                    Save
-                </button>
-            </div>
+            <div id="rabbit-search" class="hidden"></div>
+            <div id="rabbit-table" class="hidden"></div>
         </div>
     </div>
 
     <script src="js/api.js"></script>
     <script src="js/sidebar.js"></script>
+    <script src="js/rabbit-table.js"></script>
+    <script src="js/rabbit-search.js"></script>
+    <script src="js/rabbit-card.js"></script>
+    <script src="js/rabbit-actions.js"></script>
     <script>
-        if (!isLoggedIn()) { window.location.href = 'login.html'; } else {
-            renderSidebar('users');
-        }
-
         let companiesData = [];
         let allUsers = [];
-        let allRows = [];
-        let currentSort = { key: null, dir: 'asc' };
+        let currentUserId = localStorage.getItem('userId');
 
         (async function() {
-            const meResult = await apiCall('GET', '/auth/me');
-            if (!meResult || meResult.status !== 200) {
-                clearAuth();
-                window.location.href = 'login.html';
-                return;
-            }
-
-            const user = meResult.data;
-            const isSuperAdmin = (user.companies || []).some(c => c.role && c.role.name === 'SUPER_ADMIN');
-            if (!isSuperAdmin) {
-                window.location.href = 'dashboard.html';
-                return;
-            }
+            renderSidebar('users');
+            const user = await requireAuth();
+            if (!user) return;
 
             let features = {};
             (user.companies || []).forEach(c => {
@@ -197,53 +88,69 @@
             }
 
             showAdminNavLinks(features);
+
+            if (!hasPermission('users', 'create')) {
+                document.getElementById('create-btn').classList.add('hidden');
+            }
+
+            if (isSuperAdmin()) {
+                document.getElementById('filter-section').style.display = '';
+            }
+
+            const companyResult = await apiCall('GET', '/companies');
+            if (companyResult && companyResult.status === 200) {
+                companiesData = companyResult.data;
+                const select = document.getElementById('filter-company');
+                companiesData.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.companyId;
+                    opt.textContent = c.name;
+                    select.appendChild(opt);
+                });
+
+                var savedFilter = localStorage.getItem('users_filter');
+                if (savedFilter && companiesData.some(function(c) { return c.companyId === savedFilter; })) {
+                    select.value = savedFilter;
+                }
+            }
+
             document.getElementById('loading').classList.add('hidden');
-            await loadCompaniesForFilter();
             await loadUsers();
         })();
 
-        async function loadCompaniesForFilter() {
-            const result = await apiCall('GET', '/companies');
-            if (result && result.status === 200) {
-                companiesData = result.data;
-                const select = document.getElementById('filter-company');
-                const addSelect = document.getElementById('user-company');
-                companiesData.forEach(c => {
-                    const opt1 = document.createElement('option');
-                    opt1.value = c.companyId;
-                    opt1.textContent = c.name;
-                    select.appendChild(opt1);
-
-                    const opt2 = document.createElement('option');
-                    opt2.value = c.companyId;
-                    opt2.textContent = c.name;
-                    addSelect.appendChild(opt2);
-                });
+        function onFilterChange() {
+            var companyId = document.getElementById('filter-company').value;
+            var createBtn = document.getElementById('create-btn');
+            if (companyId) {
+                createBtn.href = 'user-create.html?companyId=' + companyId;
+            } else {
+                createBtn.href = 'user-create.html';
             }
+            localStorage.setItem('users_filter', companyId);
+            loadUsers();
         }
 
         async function loadUsers() {
-            const filterCompanyId = document.getElementById('filter-company').value;
+            var filterCompanyId = document.getElementById('filter-company').value;
 
             document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('table-wrapper').classList.add('hidden');
-            document.getElementById('search-container').classList.add('hidden');
+            document.getElementById('rabbit-table').classList.add('hidden');
+            document.getElementById('rabbit-search').classList.add('hidden');
             document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('error-state').classList.add('hidden');
 
             allUsers = [];
-            const companiesToQuery = filterCompanyId
-                ? companiesData.filter(c => c.companyId === filterCompanyId)
+            var companiesToQuery = filterCompanyId
+                ? companiesData.filter(function(c) { return c.companyId === filterCompanyId; })
                 : companiesData;
 
             for (const company of companiesToQuery) {
                 setCompanyId(company.companyId);
-                const result = await apiCall('GET', '/companies/' + company.companyId + '/users');
+                var result = await apiCall('GET', '/companies/' + company.companyId + '/users');
                 if (result && result.status === 200) {
-                    const users = (result.data || []).map(u => ({
-                        ...u,
-                        companyName: company.name,
-                        companyId: company.companyId
-                    }));
+                    var users = (result.data || []).map(function(u) {
+                        return Object.assign({}, u, { companyName: company.name, companyId: company.companyId });
+                    });
                     allUsers = allUsers.concat(users);
                 }
             }
@@ -256,247 +163,80 @@
                 return;
             }
 
-            document.getElementById('search-container').classList.remove('hidden');
-            document.getElementById('table-wrapper').classList.remove('hidden');
-            renderTable(allUsers);
+            document.getElementById('rabbit-search').classList.remove('hidden');
+            document.getElementById('rabbit-table').classList.remove('hidden');
+
+            RabbitSearch.render({
+                containerId: 'rabbit-search',
+                placeholder: 'Search users...',
+                sortFields: [
+                    { key: 'username', label: 'Username' },
+                    { key: 'email', label: 'Email' },
+                    { key: 'companyName', label: 'Company' }
+                ],
+                onSearch: function(query) {
+                    RabbitTable.search('rabbit-table', query);
+                },
+                onSort: function(field, order) {
+                    allUsers.sort(function(a, b) {
+                        var va = '', vb = '';
+                        if (field === 'username') { va = a.user.username || ''; vb = b.user.username || ''; }
+                        else if (field === 'email') { va = a.user.email || ''; vb = b.user.email || ''; }
+                        else if (field === 'companyName') { va = a.companyName || ''; vb = b.companyName || ''; }
+                        va = String(va).toLowerCase();
+                        vb = String(vb).toLowerCase();
+                        if (va < vb) return order === 'asc' ? -1 : 1;
+                        if (va > vb) return order === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+                    renderUserTable();
+                }
+            });
+
+            renderUserTable();
         }
 
-        function renderTable(data) {
+        function renderUserTable() {
             const currentUserId = localStorage.getItem('userId');
-            const tbody = document.getElementById('users-tbody');
-            tbody.innerHTML = '';
-            allRows = [];
 
-            data.forEach(u => {
-                const tr = document.createElement('tr');
-                const name = [u.user.firstName, u.user.lastName].filter(Boolean).join(' ') || '-';
-                const roleName = u.role ? u.role.name : '-';
-                const statusClass = u.user.status === 'ACTIVE' ? 'badge-active' : 'badge-inactive';
-                const statusText = u.user.status || '-';
-                const isSelf = u.userId === currentUserId;
-
-                let actions = '';
-                if (isSelf) {
-                    actions = '<button class="btn-secondary btn-sm" disabled title="Cannot edit your own role">Role</button> ' +
-                              '<button class="btn-secondary btn-sm" style="color:#9ca3af;" disabled title="Cannot remove yourself from company">Remove</button>';
-                } else {
-                    actions = '<button class="btn-secondary btn-sm" onclick="openRoleModal(\'' + u.userId + '\',\'' + u.companyId + '\')">Role</button> ' +
-                              '<button class="btn-secondary btn-sm" style="color:#dc2626;" onclick="handleRemove(\'' + u.companyId + '\',\'' + u.userId + '\')">Remove</button>';
-                }
-
-                const searchText = [u.user.username, u.user.email, name, u.companyName, roleName, statusText].join(' ').toLowerCase();
-                tr.setAttribute('data-search', searchText);
-                tr.innerHTML =
-                    '<td class="font-medium">' + (u.user.username || '-') + '</td>' +
-                    '<td>' + (u.user.email || '-') + '</td>' +
-                    '<td>' + name + '</td>' +
-                    '<td>' + (u.companyName || '-') + '</td>' +
-                    '<td>' + roleName + '</td>' +
-                    '<td><span class="badge ' + statusClass + '">' + statusText + '</span></td>' +
-                    '<td>' + actions + '</td>';
-                allRows.push({ tr, data: u });
-                tbody.appendChild(tr);
+            RabbitTable.render({
+                containerId: 'rabbit-table',
+                type: 'users',
+                columns: [
+                    { key: 'username', label: 'Username', sortable: true },
+                    { key: 'email', label: 'Email', sortable: true },
+                    { key: 'name', label: 'Name', sortable: false },
+                    { key: 'companyName', label: 'Company', sortable: true },
+                    { key: 'roleName', label: 'Role', sortable: false },
+                    { key: 'status', label: 'Status', sortable: false, render: function(row) {
+                        var cls = row.status === 'ACTIVE' ? 'badge-active' : 'badge-inactive';
+                        return '<span class="badge ' + cls + '">' + (row.status || '-') + '</span>';
+                    }}
+                ],
+                data: allUsers.map(function(u) {
+                    return {
+                        id: u.userId,
+                        username: u.user.username,
+                        email: u.user.email,
+                        name: [u.user.firstName, u.user.lastName].filter(Boolean).join(' '),
+                        companyName: u.companyName,
+                        roleName: u.role ? u.role.name : '-',
+                        status: u.user.status,
+                        companyId: u.companyId,
+                        _raw: u
+                    };
+                }),
+                selected: [],
+                onRefresh: function() { loadUsers(); },
+                actions: function(row) {
+                    if (row.id === currentUserId) {
+                        return '<button class="btn-secondary btn-sm" disabled>Role</button> <button class="btn-secondary btn-sm" style="color:#9ca3af;" disabled>Remove</button>';
+                    }
+                    return '<a href="user-role-edit.html?userId=' + row.id + '&companyId=' + row.companyId + '" class="btn-secondary btn-sm">Role</a> ' +
+                           '<button class="btn-secondary btn-sm" style="color:#dc2626;" onclick="handleRemove(\'' + row.companyId + '\',\'' + row.id + '\')">Remove</button>';
+                },
+                searchFields: ['username', 'email', 'name', 'companyName', 'roleName', 'status']
             });
-        }
-
-        function filterTable() {
-            const query = document.getElementById('search-input').value.toLowerCase();
-            allRows.forEach(row => {
-                const text = row.tr.getAttribute('data-search');
-                row.tr.style.display = text.includes(query) ? '' : 'none';
-            });
-        }
-
-        function sortTable(key) {
-            document.querySelectorAll('.th-sortable').forEach(th => {
-                if (th.getAttribute('data-sort') !== key) {
-                    th.classList.remove('sort-asc', 'sort-desc', 'sort-active');
-                }
-            });
-
-            if (currentSort.key === key) {
-                currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
-            } else {
-                currentSort.key = key;
-                currentSort.dir = 'asc';
-            }
-
-            const th = document.querySelector('.th-sortable[data-sort="' + key + '"]');
-            if (th) {
-                th.classList.add('sort-active');
-                th.classList.add(currentSort.dir === 'asc' ? 'sort-asc' : 'sort-desc');
-            }
-
-            allUsers.sort((a, b) => {
-                let va = '', vb = '';
-                if (key === 'username') { va = a.user.username || ''; vb = b.user.username || ''; }
-                else if (key === 'email') { va = a.user.email || ''; vb = b.user.email || ''; }
-                va = String(va).toLowerCase();
-                vb = String(vb).toLowerCase();
-                if (va < vb) return currentSort.dir === 'asc' ? -1 : 1;
-                if (va > vb) return currentSort.dir === 'asc' ? 1 : -1;
-                return 0;
-            });
-
-            renderTable(allUsers);
-            filterTable();
-        }
-
-        function openAddModal() {
-            document.getElementById('add-modal').classList.remove('hidden');
-            document.getElementById('addUserForm').reset();
-            document.getElementById('modal-global-error').classList.add('hidden');
-            document.getElementById('user-role').innerHTML = '<option value="">Select company first...</option>';
-        }
-
-        function closeAddModal() {
-            document.getElementById('add-modal').classList.add('hidden');
-        }
-
-        async function onCompanyChange() {
-            const companyId = document.getElementById('user-company').value;
-            const roleSelect = document.getElementById('user-role');
-            roleSelect.innerHTML = '<option value="">Loading roles...</option>';
-
-            if (!companyId) {
-                roleSelect.innerHTML = '<option value="">Select company first...</option>';
-                return;
-            }
-
-            setCompanyId(companyId);
-            const result = await apiCall('GET', '/roles');
-            setCompanyId(null);
-
-            if (result && result.status === 200) {
-                roleSelect.innerHTML = '<option value="">Select role...</option>';
-                (result.data || []).forEach(r => {
-                    const opt = document.createElement('option');
-                    opt.value = r.roleId;
-                    opt.textContent = r.name;
-                    roleSelect.appendChild(opt);
-                });
-            } else {
-                roleSelect.innerHTML = '<option value="">No roles available</option>';
-            }
-        }
-
-        async function handleAddUser(e) {
-            e.preventDefault();
-            const btn = document.getElementById('addUserBtn');
-            btn.disabled = true;
-            btn.textContent = 'Adding...';
-            document.getElementById('modal-global-error').classList.add('hidden');
-
-            const companyId = document.getElementById('user-company').value;
-            const body = {
-                email: document.getElementById('user-email').value.trim(),
-                firstName: document.getElementById('user-firstName').value.trim(),
-                lastName: document.getElementById('user-lastName').value.trim(),
-                username: document.getElementById('user-username').value.trim(),
-                password: document.getElementById('user-password').value,
-                roleId: document.getElementById('user-role').value
-            };
-
-            try {
-                setCompanyId(companyId);
-                const result = await apiCall('POST', '/companies/' + companyId + '/users', body);
-                setCompanyId(null);
-
-                btn.disabled = false;
-                btn.textContent = 'Add User';
-
-                if (result && (result.status === 200 || result.status === 201)) {
-                    closeAddModal();
-                    await loadUsers();
-                } else if (result && result.status === 401) {
-                    clearAuth();
-                    window.location.href = 'login.html';
-                } else {
-                    document.getElementById('modal-global-error').textContent = (result && result.data && (result.data.error || result.data.message)) || 'Failed to add user';
-                    document.getElementById('modal-global-error').classList.remove('hidden');
-                }
-            } catch (err) {
-                btn.disabled = false;
-                btn.textContent = 'Add User';
-                document.getElementById('modal-global-error').textContent = 'Unable to connect to server.';
-                document.getElementById('modal-global-error').classList.remove('hidden');
-            }
-        }
-
-        async function openRoleModal(userId, companyId) {
-            document.getElementById('role-modal').classList.remove('hidden');
-            document.getElementById('role-user-id').value = userId;
-            document.getElementById('role-company-id').value = companyId;
-            document.getElementById('role-modal-global-error').classList.add('hidden');
-            document.getElementById('change-role-select').innerHTML = '<option value="">Loading roles...</option>';
-
-            setCompanyId(companyId);
-            const result = await apiCall('GET', '/roles');
-            setCompanyId(null);
-
-            const select = document.getElementById('change-role-select');
-            select.innerHTML = '<option value="">Select role...</option>';
-            if (result && result.status === 200) {
-                (result.data || []).forEach(r => {
-                    const opt = document.createElement('option');
-                    opt.value = r.roleId;
-                    opt.textContent = r.name;
-                    select.appendChild(opt);
-                });
-            }
-
-            const currentUser = allUsers.find(u => u.userId === userId);
-            if (currentUser && currentUser.role) {
-                select.value = currentUser.role.roleId;
-            }
-        }
-
-        function closeRoleModal() {
-            document.getElementById('role-modal').classList.add('hidden');
-        }
-
-        async function handleChangeRole() {
-            const btn = document.getElementById('changeRoleBtn');
-            btn.disabled = true;
-            btn.textContent = 'Saving...';
-            document.getElementById('role-modal-global-error').classList.add('hidden');
-
-            const userId = document.getElementById('role-user-id').value;
-            const companyId = document.getElementById('role-company-id').value;
-            const roleId = document.getElementById('change-role-select').value;
-
-            if (!roleId) {
-                btn.disabled = false;
-                btn.textContent = 'Save';
-                document.getElementById('role-modal-global-error').textContent = 'Please select a role';
-                document.getElementById('role-modal-global-error').classList.remove('hidden');
-                return;
-            }
-
-            try {
-                setCompanyId(companyId);
-                const result = await apiCall('PUT', '/companies/' + companyId + '/users/' + userId + '/role', { roleId });
-                setCompanyId(null);
-
-                btn.disabled = false;
-                btn.textContent = 'Save';
-
-                if (result && result.status === 200) {
-                    closeRoleModal();
-                    await loadUsers();
-                } else if (result && result.status === 401) {
-                    clearAuth();
-                    window.location.href = 'login.html';
-                } else {
-                    document.getElementById('role-modal-global-error').textContent = (result && result.data && (result.data.error || result.data.message)) || 'Failed to change role';
-                    document.getElementById('role-modal-global-error').classList.remove('hidden');
-                }
-            } catch (err) {
-                btn.disabled = false;
-                btn.textContent = 'Save';
-                document.getElementById('role-modal-global-error').textContent = 'Unable to connect to server.';
-                document.getElementById('role-modal-global-error').classList.remove('hidden');
-            }
         }
 
         async function handleRemove(companyId, userId) {

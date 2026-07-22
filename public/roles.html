@@ -23,11 +23,15 @@
         <div id="sidebar-container"></div>
 
         <div class="main-content">
-            <div class="flex items-center justify-between mb-6">
+            <div class="page-header">
                 <h2 class="text-xl font-bold text-gray-900">Roles</h2>
-                <button onclick="openCreateModal()" class="btn-primary" style="width:auto;padding:0.5rem 1.25rem;">
+                <a href="role-create.html" class="btn-primary" style="width:auto;padding:0.5rem 1.25rem;text-decoration:none;" id="create-btn">
                     + Create Role
-                </button>
+                </a>
+            </div>
+
+            <div id="error-state" class="hidden text-center py-12">
+                <p id="error-message" class="text-red-500"></p>
             </div>
 
             <div id="loading" class="text-center py-12">
@@ -39,104 +43,30 @@
                 <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                 <h3 class="text-lg font-semibold text-gray-700 mb-2">No roles yet</h3>
                 <p class="text-gray-500 mb-6">Create your first role to get started.</p>
-                <button onclick="openCreateModal()" class="btn-primary" style="width:auto;padding:0.625rem 2rem;display:inline-block;">
+                <a href="role-create.html" class="btn-primary" style="width:auto;padding:0.625rem 2rem;display:inline-block;text-decoration:none;">
                     + Create Role
-                </button>
+                </a>
             </div>
 
-            <div id="search-container" class="hidden">
-                <div class="search-bar">
-                    <svg class="search-bar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    <input type="text" id="search-input" placeholder="Search roles..." oninput="filterTable()">
-                </div>
-            </div>
-
-            <div id="table-wrapper" class="hidden table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="th-sortable" data-sort="name" onclick="sortTable('name')">Role Name</th>
-                            <th>Company</th>
-                            <th>System</th>
-                            <th>Created By</th>
-                            <th>Permissions</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="roles-tbody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div id="create-modal" class="modal-overlay hidden">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 id="create-modal-title">Create Role</h3>
-                <button class="modal-close" onclick="closeCreateModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="modal-global-error" class="hidden global-error"></div>
-                <form id="createRoleForm" onsubmit="handleCreateRole(event)">
-                    <input type="hidden" id="edit-role-id" value="">
-                    <div class="mb-4">
-                        <label class="label">Company *</label>
-                        <select id="role-company" class="form-input" required>
-                            <option value="">Select company...</option>
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <label class="label">Role Name *</label>
-                        <input type="text" id="role-name" class="form-input" placeholder="e.g. Manager" required>
-                        <p id="role-name-error" class="field-error hidden"></p>
-                    </div>
-                    <div class="mb-4">
-                        <label class="label">Description</label>
-                        <textarea id="role-description" class="form-input" rows="2" placeholder="Brief description"></textarea>
-                    </div>
-                    <div class="mb-4">
-                        <label class="label">Permissions</label>
-                        <div id="permissions-container" class="grid grid-cols-2 gap-2 mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeCreateModal()">Cancel</button>
-                <button class="btn-primary" style="width:auto;padding:0.5rem 1.5rem;" id="createRoleBtn" onclick="document.getElementById('createRoleForm').requestSubmit()">
-                    Create
-                </button>
-            </div>
+            <div id="rabbit-search" class="hidden"></div>
+            <div id="rabbit-table" class="hidden"></div>
         </div>
     </div>
 
     <script src="js/api.js"></script>
     <script src="js/sidebar.js"></script>
+    <script src="js/rabbit-table.js"></script>
+    <script src="js/rabbit-search.js"></script>
+    <script src="js/rabbit-card.js"></script>
+    <script src="js/rabbit-actions.js"></script>
     <script>
-        if (!isLoggedIn()) { window.location.href = 'login.html'; } else {
-            renderSidebar('roles');
-        }
-
         let rolesData = [];
         let companiesData = [];
-        let permissionsData = [];
-        let allRows = [];
-        let currentSort = { key: null, dir: 'asc' };
 
         (async function() {
-            const meResult = await apiCall('GET', '/auth/me');
-            if (!meResult || meResult.status !== 200) {
-                clearAuth();
-                window.location.href = 'login.html';
-                return;
-            }
-
-            const user = meResult.data;
-            const isSuperAdmin = (user.companies || []).some(c => c.role && c.role.name === 'SUPER_ADMIN');
-            if (!isSuperAdmin) {
-                window.location.href = 'dashboard.html';
-                return;
-            }
+            renderSidebar('roles');
+            const user = await requireAuth();
+            if (!user) return;
 
             let features = {};
             (user.companies || []).forEach(c => {
@@ -150,16 +80,24 @@
             }
 
             showAdminNavLinks(features);
+
+            if (!hasPermission('roles', 'create')) {
+                document.getElementById('create-btn').classList.add('hidden');
+            }
+
+            const companyResult = await apiCall('GET', '/companies');
+            if (companyResult && companyResult.status === 200) {
+                companiesData = companyResult.data;
+            }
+
             document.getElementById('loading').classList.add('hidden');
-            await loadCompanies();
-            await loadPermissions();
             await loadRoles();
         })();
 
         async function loadRoles() {
-            const companyId = document.getElementById('role-company').value || (companiesData.length > 0 ? companiesData[0].companyId : null);
+            var companyId = companiesData.length > 0 ? companiesData[0].companyId : null;
             if (companyId) setCompanyId(companyId);
-            const result = await apiCall('GET', '/roles');
+            var result = await apiCall('GET', '/roles');
             setCompanyId(null);
             document.getElementById('loading').classList.add('hidden');
 
@@ -175,227 +113,87 @@
                 return;
             }
 
-            document.getElementById('search-container').classList.remove('hidden');
-            document.getElementById('table-wrapper').classList.remove('hidden');
-            renderTable(rolesData);
-        }
+            document.getElementById('rabbit-search').classList.remove('hidden');
+            document.getElementById('rabbit-table').classList.remove('hidden');
 
-        function renderTable(data) {
-            const tbody = document.getElementById('roles-tbody');
-            tbody.innerHTML = '';
-            allRows = [];
-
-            data.forEach(r => {
-                const tr = document.createElement('tr');
-                const isSystem = r.isSystem;
-                const companyName = r.company ? r.company.name : '-';
-                const createdBy = r.creator ? (r.creator.firstName ? r.creator.firstName + ' ' + r.creator.lastName : r.creator.username) : '-';
-                const permCount = r.permissions ? r.permissions.length : 0;
-
-                let actions = '';
-                if (!isSystem) {
-                    actions = '<button class="btn-secondary btn-sm" onclick="openEditModal(\'' + r.roleId + '\')">Edit</button> ' +
-                              '<button class="btn-secondary btn-sm" style="color:#dc2626;" onclick="handleDelete(\'' + r.roleId + '\')">Delete</button>';
-                } else {
-                    actions = '<span class="text-gray-400 text-sm">System Role</span>';
-                }
-
-                const searchText = [r.name, companyName, isSystem ? 'System' : 'Custom', createdBy, permCount + ' permissions'].join(' ').toLowerCase();
-                tr.setAttribute('data-search', searchText);
-                tr.innerHTML =
-                    '<td class="font-medium">' + r.name + '</td>' +
-                    '<td>' + companyName + '</td>' +
-                    '<td>' + (isSystem ? '<span class="badge badge-active">System</span>' : '<span class="badge badge-inactive">Custom</span>') + '</td>' +
-                    '<td>' + createdBy + '</td>' +
-                    '<td>' + permCount + ' permission' + (permCount !== 1 ? 's' : '') + '</td>' +
-                    '<td>' + actions + '</td>';
-                allRows.push({ tr, data: r });
-                tbody.appendChild(tr);
-            });
-        }
-
-        function filterTable() {
-            const query = document.getElementById('search-input').value.toLowerCase();
-            allRows.forEach(row => {
-                const text = row.tr.getAttribute('data-search');
-                row.tr.style.display = text.includes(query) ? '' : 'none';
-            });
-        }
-
-        function sortTable(key) {
-            document.querySelectorAll('.th-sortable').forEach(th => {
-                if (th.getAttribute('data-sort') !== key) {
-                    th.classList.remove('sort-asc', 'sort-desc', 'sort-active');
+            RabbitSearch.render({
+                containerId: 'rabbit-search',
+                placeholder: 'Search roles...',
+                sortFields: [
+                    { key: 'name', label: 'Name' },
+                    { key: 'companyName', label: 'Company' }
+                ],
+                onSearch: function(query) {
+                    RabbitTable.search('rabbit-table', query);
+                },
+                onSort: function(field, order) {
+                    rolesData.sort(function(a, b) {
+                        var va = '', vb = '';
+                        if (field === 'name') { va = a.name || ''; vb = b.name || ''; }
+                        else if (field === 'companyName') { va = a.company ? a.company.name : ''; vb = b.company ? b.company.name : ''; }
+                        va = String(va).toLowerCase();
+                        vb = String(vb).toLowerCase();
+                        if (va < vb) return order === 'asc' ? -1 : 1;
+                        if (va > vb) return order === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+                    renderRoleTable();
                 }
             });
 
-            if (currentSort.key === key) {
-                currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
-            } else {
-                currentSort.key = key;
-                currentSort.dir = 'asc';
-            }
+            renderRoleTable();
+        }
 
-            const th = document.querySelector('.th-sortable[data-sort="' + key + '"]');
-            if (th) {
-                th.classList.add('sort-active');
-                th.classList.add(currentSort.dir === 'asc' ? 'sort-asc' : 'sort-desc');
-            }
-
-            rolesData.sort((a, b) => {
-                let va = a[key] || '';
-                let vb = b[key] || '';
-                va = String(va).toLowerCase();
-                vb = String(vb).toLowerCase();
-                if (va < vb) return currentSort.dir === 'asc' ? -1 : 1;
-                if (va > vb) return currentSort.dir === 'asc' ? 1 : -1;
-                return 0;
+        function renderRoleTable() {
+            RabbitTable.render({
+                containerId: 'rabbit-table',
+                type: 'roles',
+                columns: [
+                    { key: 'name', label: 'Role Name', sortable: true },
+                    { key: 'companyName', label: 'Company', sortable: true },
+                    { key: 'isSystem', label: 'Type', sortable: false, render: function(row) {
+                        return row.isSystem ? '<span class="badge badge-active">System</span>' : '<span class="badge badge-inactive">Custom</span>';
+                    }},
+                    { key: 'createdBy', label: 'Created By', sortable: false },
+                    { key: 'permCount', label: 'Permissions', sortable: false, render: function(row) {
+                        return row.permCount + ' permission' + (row.permCount !== 1 ? 's' : '');
+                    }}
+                ],
+                data: rolesData.map(function(r) {
+                    return {
+                        id: r.roleId,
+                        name: r.name,
+                        companyName: r.company ? r.company.name : '-',
+                        isSystem: r.isSystem,
+                        createdBy: r.creator ? r.creator.username : '-',
+                        permCount: r.permissions ? r.permissions.length : 0,
+                        _raw: r
+                    };
+                }),
+                selected: [],
+                onRefresh: function() { loadRoles(); },
+                actions: function(row) {
+                    if (row.isSystem) {
+                        return '<span class="text-gray-400 text-sm">System Role</span>';
+                    }
+                    return RabbitActions.renderActions('roles', row, { deleteFunction: 'handleDelete(\'' + row.id + '\')' });
+                },
+                searchFields: ['name', 'companyName']
             });
-
-            renderTable(rolesData);
-            filterTable();
-        }
-
-        async function loadCompanies() {
-            const result = await apiCall('GET', '/companies');
-            if (result && result.status === 200) {
-                companiesData = result.data;
-                const select = document.getElementById('role-company');
-                select.innerHTML = '<option value="">Select company...</option>';
-                companiesData.forEach(c => {
-                    const opt = document.createElement('option');
-                    opt.value = c.companyId;
-                    opt.textContent = c.name;
-                    select.appendChild(opt);
-                });
-            }
-        }
-
-        async function loadPermissions() {
-            const result = await apiCall('GET', '/roles/permissions');
-            if (result && result.status === 200) {
-                permissionsData = result.data;
-                renderPermissions();
-            }
-        }
-
-        function renderPermissions(selectedIds) {
-            const container = document.getElementById('permissions-container');
-            container.innerHTML = '';
-            const selected = selectedIds || [];
-            const actionLabels = { read: 'View', write: 'Edit' };
-            const resourceLabels = { companies: 'Companies', users: 'Users', roles: 'Roles', documents: 'Documents' };
-            permissionsData.forEach(p => {
-                const id = p.permissionId;
-                const checked = selected.includes(id) ? 'checked' : '';
-                const resource = resourceLabels[p.resource] || p.resource;
-                const action = actionLabels[p.action] || p.action;
-                const label = resource + ': ' + action + (p.description ? ' (' + p.description + ')' : '');
-                container.innerHTML +=
-                    '<label class="flex items-center gap-2 text-sm cursor-pointer">' +
-                    '<input type="checkbox" class="perm-checkbox" value="' + id + '" ' + checked + '>' +
-                    '<span>' + label + '</span>' +
-                    '</label>';
-            });
-        }
-
-        function openCreateModal() {
-            document.getElementById('create-modal').classList.remove('hidden');
-            document.getElementById('create-modal-title').textContent = 'Create Role';
-            document.getElementById('createRoleForm').reset();
-            document.getElementById('edit-role-id').value = '';
-            document.getElementById('modal-global-error').classList.add('hidden');
-            document.getElementById('createRoleBtn').textContent = 'Create';
-            document.getElementById('role-company').disabled = false;
-            renderPermissions();
-        }
-
-        function closeCreateModal() {
-            document.getElementById('create-modal').classList.add('hidden');
-        }
-
-        function openEditModal(roleId) {
-            const role = rolesData.find(r => r.roleId === roleId);
-            if (!role) return;
-
-            document.getElementById('create-modal').classList.remove('hidden');
-            document.getElementById('create-modal-title').textContent = 'Edit Role';
-            document.getElementById('edit-role-id').value = roleId;
-            document.getElementById('modal-global-error').classList.add('hidden');
-            document.getElementById('createRoleBtn').textContent = 'Save Changes';
-            document.getElementById('role-company').value = role.companyId || '';
-            document.getElementById('role-company').disabled = true;
-            document.getElementById('role-name').value = role.name;
-            document.getElementById('role-description').value = role.description || '';
-
-            const permIds = (role.permissions || []).map(p => p.permissionId);
-            renderPermissions(permIds);
-        }
-
-        async function handleCreateRole(e) {
-            e.preventDefault();
-            const btn = document.getElementById('createRoleBtn');
-            const editId = document.getElementById('edit-role-id').value;
-            btn.disabled = true;
-            btn.textContent = editId ? 'Saving...' : 'Creating...';
-            document.getElementById('modal-global-error').classList.add('hidden');
-
-            const companyId = document.getElementById('role-company').value;
-            const name = document.getElementById('role-name').value.trim();
-            const description = document.getElementById('role-description').value.trim();
-            const permissionIds = Array.from(document.querySelectorAll('.perm-checkbox:checked')).map(cb => cb.value);
-
-            const body = { name, description, companyId, permissionIds };
-
-            try {
-                let result;
-                if (editId) {
-                    setCompanyId(companyId);
-                    result = await apiCall('PUT', '/roles/' + editId, body);
-                    setCompanyId(null);
-                } else {
-                    setCompanyId(companyId);
-                    result = await apiCall('POST', '/roles', body);
-                    setCompanyId(null);
-                }
-
-                btn.disabled = false;
-                btn.textContent = editId ? 'Save Changes' : 'Create';
-
-                if (result && (result.status === 200 || result.status === 201)) {
-                    closeCreateModal();
-                    document.getElementById('loading').classList.remove('hidden');
-                    document.getElementById('table-wrapper').classList.add('hidden');
-                    document.getElementById('search-container').classList.add('hidden');
-                    document.getElementById('empty-state').classList.add('hidden');
-                    await loadRoles();
-                } else if (result && result.status === 401) {
-                    clearAuth();
-                    window.location.href = 'login.html';
-                } else {
-                    document.getElementById('modal-global-error').textContent = (result && result.data && (result.data.error || result.data.message)) || 'Failed to save role';
-                    document.getElementById('modal-global-error').classList.remove('hidden');
-                }
-            } catch (err) {
-                btn.disabled = false;
-                btn.textContent = editId ? 'Save Changes' : 'Create';
-                document.getElementById('modal-global-error').textContent = 'Unable to connect to server.';
-                document.getElementById('modal-global-error').classList.remove('hidden');
-            }
         }
 
         async function handleDelete(roleId) {
             if (!confirm('Are you sure you want to delete this role?')) return;
 
-            const role = rolesData.find(r => r.roleId === roleId);
+            var role = rolesData.find(function(r) { return r.roleId === roleId; });
             if (role && role.companyId) setCompanyId(role.companyId);
-            const result = await apiCall('DELETE', '/roles/' + roleId);
+            var result = await apiCall('DELETE', '/roles/' + roleId);
             setCompanyId(null);
 
             if (result && (result.status === 200 || result.status === 204)) {
                 document.getElementById('loading').classList.remove('hidden');
-                document.getElementById('table-wrapper').classList.add('hidden');
-                document.getElementById('search-container').classList.add('hidden');
+                document.getElementById('rabbit-table').classList.add('hidden');
+                document.getElementById('rabbit-search').classList.add('hidden');
                 document.getElementById('empty-state').classList.add('hidden');
                 await loadRoles();
             } else if (result && result.status === 401) {

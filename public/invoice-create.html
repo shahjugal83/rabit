@@ -66,6 +66,9 @@
     <script src="js/rabbit-search.js"></script>
     <script src="js/rabbit-card.js"></script>
     <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const presetCompanyId = urlParams.get('companyId');
+
         (async function() {
             const user = await requireAuth();
             if (!user) return;
@@ -113,6 +116,11 @@
                 opt.textContent = c.name;
                 select.appendChild(opt);
             });
+
+            if (presetCompanyId) {
+                select.value = presetCompanyId;
+                onCompanyChange();
+            }
         }
 
         function renderDocNameSelect() {

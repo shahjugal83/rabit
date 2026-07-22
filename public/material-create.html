@@ -74,6 +74,9 @@
     <script src="js/rabbit-search.js"></script>
     <script src="js/rabbit-card.js"></script>
     <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const presetCompanyId = urlParams.get('companyId');
+
         (async function() {
             const user = await requireAuth();
             if (!user) return;
@@ -107,6 +110,11 @@
                 escapeHtml(c.name) +
                 '</label>'
             ).join('');
+
+            if (presetCompanyId) {
+                var cb = container.querySelector('input[value="' + presetCompanyId + '"]');
+                if (cb) cb.checked = true;
+            }
         }
 
         function addIdentifier() {

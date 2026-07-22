@@ -23,18 +23,22 @@
         <div id="sidebar-container"></div>
 
         <div class="main-content">
-            <div class="flex items-center justify-between mb-6">
+            <div class="page-header">
                 <h2 class="text-xl font-bold text-gray-900">Invoices</h2>
-                <button onclick="openCreateModal()" class="btn-primary" style="width:auto;padding:0.5rem 1.25rem;">
+                <a href="invoice-create.html" class="btn-primary" style="width:auto;padding:0.5rem 1.25rem;text-decoration:none;" id="create-btn">
                     + Create Invoice
-                </button>
+                </a>
             </div>
 
-            <div class="mb-4">
+            <div id="filter-section" class="mb-4" style="display:none;">
                 <label class="label">Filter by Company</label>
-                <select id="filter-company" class="form-input" style="max-width:20rem;" onchange="loadInvoices()">
+                <select id="filter-company" class="form-input" style="max-width:20rem;" onchange="onFilterChange()">
                     <option value="">All companies</option>
                 </select>
+            </div>
+
+            <div id="error-state" class="hidden text-center py-12">
+                <p id="error-message" class="text-red-500"></p>
             </div>
 
             <div id="loading" class="text-center py-12">
@@ -46,102 +50,31 @@
                 <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
                 <h3 class="text-lg font-semibold text-gray-700 mb-2">No invoices yet</h3>
                 <p class="text-gray-500 mb-6">Create your first invoice to get started.</p>
-                <button onclick="openCreateModal()" class="btn-primary" style="width:auto;padding:0.625rem 2rem;display:inline-block;">
+                <a href="invoice-create.html" class="btn-primary" style="width:auto;padding:0.625rem 2rem;display:inline-block;text-decoration:none;">
                     + Create Invoice
-                </button>
+                </a>
             </div>
 
-            <div id="search-container" class="hidden">
-                <div class="search-bar">
-                    <svg class="search-bar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    <input type="text" id="search-input" placeholder="Search invoices..." oninput="filterTable()">
-                </div>
-            </div>
-
-            <div id="table-wrapper" class="hidden table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="th-sortable" data-sort="invoiceId" onclick="sortTable('invoiceId')">ID</th>
-                            <th class="th-sortable" data-sort="documentNumber" onclick="sortTable('documentNumber')">Doc Number</th>
-                            <th class="th-sortable" data-sort="documentName" onclick="sortTable('documentName')">Doc Name</th>
-                            <th class="th-sortable" data-sort="companyName" onclick="sortTable('companyName')">Company</th>
-                            <th>Materials</th>
-                            <th class="th-sortable" data-sort="createdAt" onclick="sortTable('createdAt')">Created</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="invoices-tbody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div id="create-modal" class="modal-overlay hidden">
-        <div class="modal" style="max-width:36rem;">
-            <div class="modal-header">
-                <h3>Create Invoice</h3>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
-            </div>
-            <div class="modal-body" style="max-height:70vh;overflow-y:auto;">
-                <div id="modal-global-error" class="hidden global-error"></div>
-                <form id="invoiceForm" onsubmit="handleCreate(event)">
-                    <div class="mb-4">
-                        <label class="label">Document Number *</label>
-                        <input type="text" id="doc-number" class="form-input" placeholder="e.g. INV-001" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="label">Document Name *</label>
-                        <select id="doc-name" class="form-input" required>
-                            <option value="">Select document type...</option>
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <label class="label">Company *</label>
-                        <select id="invoice-company" class="form-input" required onchange="onCompanyChange()">
-                            <option value="">Select company...</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="label">Materials *</label>
-                        <div id="items-container"></div>
-                        <button type="button" onclick="addMaterialRow()" class="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium">+ Add another material</button>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeModal()">Cancel</button>
-                <button class="btn-primary" style="width:auto;padding:0.5rem 1.5rem;" id="createBtn" onclick="document.getElementById('invoiceForm').requestSubmit()">
-                    Create
-                </button>
-            </div>
+            <div id="rabbit-search" class="hidden"></div>
+            <div id="rabbit-table" class="hidden"></div>
         </div>
     </div>
 
     <script src="js/api.js"></script>
     <script src="js/sidebar.js"></script>
+    <script src="js/rabbit-table.js"></script>
+    <script src="js/rabbit-search.js"></script>
+    <script src="js/rabbit-card.js"></script>
+    <script src="js/rabbit-actions.js"></script>
     <script>
-        if (!isLoggedIn()) { window.location.href = 'login.html'; } else {
-            renderSidebar('invoices');
-        }
-
         let companiesData = [];
-        let allMaterials = [];
         let allInvoices = [];
-        let allRows = [];
-        let currentSort = { key: null, dir: 'asc' };
-        let materialRowCount = 0;
 
         (async function() {
-            const meResult = await apiCall('GET', '/auth/me');
-            if (!meResult || meResult.status !== 200) {
-                clearAuth();
-                window.location.href = 'login.html';
-                return;
-            }
+            renderSidebar('invoices');
+            const user = await requireAuth();
+            if (!user) return;
 
-            const user = meResult.data;
             let features = {};
             (user.companies || []).forEach(c => {
                 if (c.features && c.features.invoiceManagement) features.invoiceManagement = true;
@@ -154,41 +87,28 @@
 
             showAdminNavLinks(features);
 
+            if (!hasPermission('invoices', 'create')) {
+                document.getElementById('create-btn').classList.add('hidden');
+            }
+
+            if (isSuperAdmin()) {
+                document.getElementById('filter-section').style.display = '';
+            }
+
             const companyResult = await apiCall('GET', '/companies');
             if (companyResult && companyResult.status === 200) {
                 companiesData = companyResult.data || [];
                 const filterSelect = document.getElementById('filter-company');
-                const createSelect = document.getElementById('invoice-company');
                 companiesData.forEach(c => {
-                    const opt1 = document.createElement('option');
-                    opt1.value = c.name;
-                    opt1.textContent = c.name;
-                    filterSelect.appendChild(opt1);
-
-                    const opt2 = document.createElement('option');
-                    opt2.value = c.companyId;
-                    opt2.textContent = c.name;
-                    createSelect.appendChild(opt2);
+                    const opt = document.createElement('option');
+                    opt.value = c.companyId;
+                    opt.textContent = c.name;
+                    filterSelect.appendChild(opt);
                 });
-            }
 
-            const matResult = await apiCall('GET', '/materials');
-            if (matResult && matResult.status === 200) {
-                allMaterials = matResult.data || [];
-            }
-
-            const docSelect = document.getElementById('doc-name');
-            for (const c of companiesData) {
-                setCompanyId(c.companyId);
-                const docResult = await apiCall('GET', '/companies/' + c.companyId + '/document-types');
-                setCompanyId(null);
-                if (docResult && docResult.status === 200) {
-                    (docResult.data || []).forEach(d => {
-                        const opt = document.createElement('option');
-                        opt.value = d.name;
-                        opt.textContent = d.name + (d.documentNumber ? ' (' + d.documentNumber + ')' : '') + ' - ' + c.name;
-                        docSelect.appendChild(opt);
-                    });
+                var savedFilter = localStorage.getItem('invoices_filter');
+                if (savedFilter && companiesData.some(c => c.companyId === savedFilter)) {
+                    filterSelect.value = savedFilter;
                 }
             }
 
@@ -196,248 +116,130 @@
             await loadInvoices();
         })();
 
+        function onFilterChange() {
+            var companyId = document.getElementById('filter-company').value;
+            var createBtn = document.getElementById('create-btn');
+            if (companyId) {
+                createBtn.href = 'invoice-create.html?companyId=' + companyId;
+            } else {
+                createBtn.href = 'invoice-create.html';
+            }
+            localStorage.setItem('invoices_filter', companyId);
+            loadInvoices();
+        }
+
         async function loadInvoices() {
-            const filterCompany = document.getElementById('filter-company').value;
+            var filterCompanyId = document.getElementById('filter-company').value;
 
             document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('table-wrapper').classList.add('hidden');
-            document.getElementById('search-container').classList.add('hidden');
+            document.getElementById('rabbit-table').classList.add('hidden');
+            document.getElementById('rabbit-search').classList.add('hidden');
             document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('error-state').classList.add('hidden');
 
-            const endpoint = filterCompany ? '/invoices?company=' + encodeURIComponent(filterCompany) : '/invoices';
-            const result = await apiCall('GET', endpoint);
+            var endpoint = filterCompanyId ? '/invoices?company=' + encodeURIComponent(companiesData.find(function(c) { return c.companyId === filterCompanyId; }).name) : '/invoices';
+            var result = await apiCall('GET', endpoint);
             document.getElementById('loading').classList.add('hidden');
 
-            allInvoices = (result && result.status === 200) ? (result.data || []) : [];
+            if (!result || result.status === 0) {
+                document.getElementById('error-message').textContent = 'Unable to connect to server';
+                document.getElementById('error-state').classList.remove('hidden');
+                return;
+            }
+
+            if (result.status === 403) {
+                document.getElementById('error-message').textContent = 'Access denied — invoice management not enabled';
+                document.getElementById('error-state').classList.remove('hidden');
+                return;
+            }
+
+            if (result.status !== 200) {
+                document.getElementById('error-message').textContent = 'Server error — please try again';
+                document.getElementById('error-state').classList.remove('hidden');
+                return;
+            }
+
+            allInvoices = result.data || [];
 
             if (allInvoices.length === 0) {
                 document.getElementById('empty-state').classList.remove('hidden');
                 return;
             }
 
-            document.getElementById('search-container').classList.remove('hidden');
-            document.getElementById('table-wrapper').classList.remove('hidden');
-            renderTable(allInvoices);
-        }
+            document.getElementById('rabbit-search').classList.remove('hidden');
+            document.getElementById('rabbit-table').classList.remove('hidden');
 
-        function renderTable(data) {
-            const tbody = document.getElementById('invoices-tbody');
-            tbody.innerHTML = '';
-            allRows = [];
-
-            data.forEach(inv => {
-                const tr = document.createElement('tr');
-                const created = new Date(inv.createdAt).toLocaleDateString();
-                const itemsHtml = (inv.items || []).map(i =>
-                    '<div class="text-sm"><span class="font-medium">' + i.materialName + '</span> <span class="text-gray-400">/</span> ' + i.identifierName + '</div>'
-                ).join('');
-                const searchText = [
-                    inv.invoiceId, inv.documentNumber, inv.documentName, inv.companyName,
-                    (inv.items || []).map(i => i.materialName + ' ' + i.identifierName).join(' '),
-                    created
-                ].join(' ').toLowerCase();
-                tr.setAttribute('data-search', searchText);
-                tr.innerHTML =
-                    '<td>' + inv.invoiceId + '</td>' +
-                    '<td class="font-medium">' + (inv.documentNumber || '-') + '</td>' +
-                    '<td>' + (inv.documentName || '-') + '</td>' +
-                    '<td>' + (inv.companyName || '-') + '</td>' +
-                    '<td>' + (itemsHtml || '-') + '</td>' +
-                    '<td>' + created + '</td>' +
-                    '<td><button class="btn-secondary btn-sm" style="color:#dc2626;" onclick="handleDelete(' + inv.invoiceId + ')">Delete</button></td>';
-                allRows.push({ tr, data: inv });
-                tbody.appendChild(tr);
-            });
-        }
-
-        function filterTable() {
-            const query = document.getElementById('search-input').value.toLowerCase();
-            allRows.forEach(row => {
-                const text = row.tr.getAttribute('data-search');
-                row.tr.style.display = text.includes(query) ? '' : 'none';
-            });
-        }
-
-        function sortTable(key) {
-            document.querySelectorAll('.th-sortable').forEach(th => {
-                if (th.getAttribute('data-sort') !== key) {
-                    th.classList.remove('sort-asc', 'sort-desc', 'sort-active');
+            RabbitSearch.render({
+                containerId: 'rabbit-search',
+                placeholder: 'Search invoices...',
+                sortFields: [
+                    { key: 'documentNumber', label: 'Doc Number' },
+                    { key: 'documentName', label: 'Doc Name' },
+                    { key: 'companyName', label: 'Company' },
+                    { key: 'createdAt', label: 'Date' }
+                ],
+                onSearch: function(query) {
+                    RabbitTable.search('rabbit-table', query);
+                },
+                onSort: function(field, order) {
+                    allInvoices.sort(function(a, b) {
+                        var va = a[field] || '';
+                        var vb = b[field] || '';
+                        if (field === 'createdAt') {
+                            va = new Date(va).getTime();
+                            vb = new Date(vb).getTime();
+                            return order === 'asc' ? va - vb : vb - va;
+                        }
+                        va = String(va).toLowerCase();
+                        vb = String(vb).toLowerCase();
+                        if (va < vb) return order === 'asc' ? -1 : 1;
+                        if (va > vb) return order === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+                    renderInvoiceTable();
                 }
             });
 
-            if (currentSort.key === key) {
-                currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
-            } else {
-                currentSort.key = key;
-                currentSort.dir = 'asc';
-            }
+            renderInvoiceTable();
+        }
 
-            const th = document.querySelector('.th-sortable[data-sort="' + key + '"]');
-            if (th) {
-                th.classList.add('sort-active');
-                th.classList.add(currentSort.dir === 'asc' ? 'sort-asc' : 'sort-desc');
-            }
-
-            allInvoices.sort((a, b) => {
-                let va = a[key] || '';
-                let vb = b[key] || '';
-                if (key === 'invoiceId' || key === 'createdAt') {
-                    if (key === 'createdAt') { va = new Date(va).getTime(); vb = new Date(vb).getTime(); }
-                    else { va = Number(va); vb = Number(vb); }
-                    return currentSort.dir === 'asc' ? va - vb : vb - va;
-                }
-                va = String(va).toLowerCase();
-                vb = String(vb).toLowerCase();
-                if (va < vb) return currentSort.dir === 'asc' ? -1 : 1;
-                if (va > vb) return currentSort.dir === 'asc' ? 1 : -1;
-                return 0;
+        function renderInvoiceTable() {
+            RabbitTable.render({
+                containerId: 'rabbit-table',
+                type: 'invoices',
+                columns: [
+                    { key: 'invoiceId', label: 'ID', sortable: true },
+                    { key: 'documentNumber', label: 'Doc Number', sortable: true },
+                    { key: 'documentName', label: 'Doc Name', sortable: true },
+                    { key: 'companyName', label: 'Company', sortable: true },
+                    { key: 'materials', label: 'Materials', sortable: false, render: function(row) {
+                        return (row.items || []).map(function(i) {
+                            return '<div class="text-sm"><span class="font-medium">' + i.materialName + '</span> <span class="text-gray-400">/</span> ' + i.identifierName + '</div>';
+                        }).join('');
+                    }},
+                    { key: 'createdAt', label: 'Created', sortable: true, render: function(row) {
+                        return new Date(row.createdAt).toLocaleDateString();
+                    }}
+                ],
+                data: allInvoices.map(function(inv) {
+                    return {
+                        id: inv.invoiceId,
+                        invoiceId: inv.invoiceId,
+                        documentNumber: inv.documentNumber,
+                        documentName: inv.documentName,
+                        companyName: inv.companyName,
+                        materials: (inv.items || []).map(function(i) { return i.materialName + ' ' + i.identifierName; }).join(' '),
+                        items: inv.items,
+                        createdAt: inv.createdAt
+                    };
+                }),
+                selected: [],
+                onRefresh: function() { loadInvoices(); },
+                actions: function(row) {
+                    return RabbitActions.renderActions('invoices', row, { deleteFunction: 'handleDelete(' + row.id + ')' });
+                },
+                searchFields: ['documentNumber', 'documentName', 'companyName', 'materials']
             });
-
-            renderTable(allInvoices);
-            filterTable();
-        }
-
-        function openCreateModal() {
-            document.getElementById('create-modal').classList.remove('hidden');
-            document.getElementById('invoiceForm').reset();
-            document.getElementById('modal-global-error').classList.add('hidden');
-            materialRowCount = 0;
-            document.getElementById('items-container').innerHTML = '';
-            addMaterialRow();
-        }
-
-        function closeModal() {
-            document.getElementById('create-modal').classList.add('hidden');
-        }
-
-        function getCompanyMaterials() {
-            const companyId = document.getElementById('invoice-company').value;
-            if (!companyId) return [];
-            return allMaterials.filter(m => m.companies.some(c => c.companyId === companyId));
-        }
-
-        function onCompanyChange() {
-            document.getElementById('items-container').innerHTML = '';
-            materialRowCount = 0;
-            addMaterialRow();
-        }
-
-        function addMaterialRow() {
-            const container = document.getElementById('items-container');
-            const idx = materialRowCount++;
-            const row = document.createElement('div');
-            row.className = 'flex gap-2 mb-2 items-end';
-            row.id = 'item-row-' + idx;
-
-            const companyMaterials = getCompanyMaterials();
-            const matOpts = '<option value="">Select material...</option>' +
-                companyMaterials.map(m => '<option value="' + m.materialId + '">' + m.name + '</option>').join('');
-
-            row.innerHTML =
-                '<div class="flex-1">' +
-                    '<select class="form-input" id="item-material-' + idx + '" onchange="onItemMaterialChange(' + idx + ')" required>' +
-                        matOpts +
-                    '</select>' +
-                '</div>' +
-                '<div class="flex-1">' +
-                    '<select class="form-input" id="item-identifier-' + idx + '" required>' +
-                        '<option value="">Select material first...</option>' +
-                    '</select>' +
-                '</div>' +
-                (idx > 0 ?
-                    '<button type="button" onclick="removeMaterialRow(' + idx + ')" class="text-red-500 hover:text-red-700 p-2" title="Remove">' +
-                        '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>' +
-                    '</button>' :
-                    '<div style="width:2.5rem;"></div>'
-                );
-
-            container.appendChild(row);
-        }
-
-        function removeMaterialRow(idx) {
-            const row = document.getElementById('item-row-' + idx);
-            if (row) row.remove();
-        }
-
-        function onItemMaterialChange(idx) {
-            const materialId = document.getElementById('item-material-' + idx).value;
-            const idSelect = document.getElementById('item-identifier-' + idx);
-
-            if (!materialId) {
-                idSelect.innerHTML = '<option value="">Select material first...</option>';
-                return;
-            }
-
-            const material = allMaterials.find(m => m.materialId === materialId);
-            idSelect.innerHTML = '<option value="">Select identifier...</option>';
-            if (material && material.identifiers) {
-                material.identifiers.forEach(i => {
-                    const opt = document.createElement('option');
-                    opt.value = i.name;
-                    opt.textContent = i.name;
-                    idSelect.appendChild(opt);
-                });
-            }
-        }
-
-        async function handleCreate(e) {
-            e.preventDefault();
-            const btn = document.getElementById('createBtn');
-            btn.disabled = true;
-            btn.textContent = 'Creating...';
-            document.getElementById('modal-global-error').classList.add('hidden');
-
-            const companyId = document.getElementById('invoice-company').value;
-            const companyName = companiesData.find(c => c.companyId === companyId);
-
-            const items = [];
-            document.querySelectorAll('[id^="item-material-"]').forEach(el => {
-                const idx = el.id.split('-').pop();
-                const materialId = el.value;
-                const material = allMaterials.find(m => m.materialId === materialId);
-                const identifierName = document.getElementById('item-identifier-' + idx).value;
-                if (material && identifierName) {
-                    items.push({ materialName: material.name, identifierName });
-                }
-            });
-
-            if (items.length === 0) {
-                document.getElementById('modal-global-error').textContent = 'Please add at least one material with identifier';
-                document.getElementById('modal-global-error').classList.remove('hidden');
-                btn.disabled = false;
-                btn.textContent = 'Create';
-                return;
-            }
-
-            const body = {
-                documentNumber: document.getElementById('doc-number').value.trim(),
-                documentName: document.getElementById('doc-name').value,
-                companyName: companyName ? companyName.name : '',
-                items
-            };
-
-            try {
-                const result = await apiCall('POST', '/invoices', body);
-
-                btn.disabled = false;
-                btn.textContent = 'Create';
-
-                if (result && (result.status === 200 || result.status === 201)) {
-                    closeModal();
-                    await loadInvoices();
-                } else if (result && result.status === 401) {
-                    clearAuth();
-                    window.location.href = 'login.html';
-                } else {
-                    document.getElementById('modal-global-error').textContent = (result && result.data && (result.data.error || result.data.message)) || 'Failed to create invoice';
-                    document.getElementById('modal-global-error').classList.remove('hidden');
-                }
-            } catch (err) {
-                btn.disabled = false;
-                btn.textContent = 'Create';
-                document.getElementById('modal-global-error').textContent = 'Unable to connect to server.';
-                document.getElementById('modal-global-error').classList.remove('hidden');
-            }
         }
 
         async function handleDelete(invoiceId) {

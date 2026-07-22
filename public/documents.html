@@ -23,23 +23,27 @@
         <div id="sidebar-container"></div>
 
         <div class="main-content">
-            <div class="flex items-center justify-between mb-6">
+            <div class="page-header">
                 <h2 class="text-xl font-bold text-gray-900">Document Types</h2>
-                <div class="flex gap-2">
-                    <button onclick="openBulkCreateModal()" class="btn-secondary" style="width:auto;padding:0.5rem 1.25rem;">
+                <div class="flex gap-2" id="create-buttons">
+                    <a href="document-bulk-create.html" class="btn-secondary" style="width:auto;padding:0.5rem 1.25rem;text-decoration:none;" id="bulk-create-link">
                         + Bulk Create
-                    </button>
-                    <button onclick="openCreateModal()" class="btn-primary" style="width:auto;padding:0.5rem 1.25rem;">
+                    </a>
+                    <a href="document-create.html" class="btn-primary" style="width:auto;padding:0.5rem 1.25rem;text-decoration:none;" id="add-type-link">
                         + Add Type
-                    </button>
+                    </a>
                 </div>
             </div>
 
-            <div class="mb-4">
+            <div id="filter-section" class="mb-4" style="display:none;">
                 <label class="label">Filter by Company</label>
-                <select id="filter-company" class="form-input" style="max-width:20rem;" onchange="loadDocumentTypes()">
+                <select id="filter-company" class="form-input" style="max-width:20rem;" onchange="onFilterChange()">
                     <option value="">All companies</option>
                 </select>
+            </div>
+
+            <div id="error-state" class="hidden text-center py-12">
+                <p id="error-message" class="text-red-500"></p>
             </div>
 
             <div id="loading" class="text-center py-12 hidden">
@@ -51,115 +55,30 @@
                 <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <h3 class="text-lg font-semibold text-gray-700 mb-2">No document types yet</h3>
                 <p class="text-gray-500 mb-6" id="empty-text">Select a company to view document types.</p>
-                <button onclick="openCreateModal()" class="btn-primary" style="width:auto;padding:0.625rem 2rem;display:inline-block;" id="empty-btn">
+                <a href="document-create.html" class="btn-primary" style="width:auto;padding:0.625rem 2rem;display:inline-block;text-decoration:none;" id="empty-btn">
                     + Add Type
-                </button>
+                </a>
             </div>
 
-            <div id="search-container" class="hidden">
-                <div class="search-bar">
-                    <svg class="search-bar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    <input type="text" id="search-input" placeholder="Search document types..." oninput="filterTable()">
-                </div>
-            </div>
-
-            <div id="table-wrapper" class="hidden table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="th-sortable" data-sort="name" onclick="sortTable('name')">Name</th>
-                            <th>Doc Number</th>
-                            <th>Company</th>
-                            <th>Created By</th>
-                            <th>Updated By</th>
-                            <th class="th-sortable" data-sort="createdAt" onclick="sortTable('createdAt')">Created</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="docs-tbody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div id="create-modal" class="modal-overlay hidden">
-        <div class="modal">
-            <div class="modal-header">
-                <h3>Add Document Type</h3>
-                <button class="modal-close" onclick="closeCreateModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="modal-global-error" class="hidden global-error"></div>
-                <form id="createDocForm" onsubmit="handleCreate(event)">
-                    <div class="mb-4">
-                        <label class="label">Document Type Name *</label>
-                        <input type="text" id="doc-name" class="form-input" placeholder="e.g. Tax Invoice" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="label">Document Number</label>
-                        <input type="text" id="doc-number" class="form-input" placeholder="e.g. INV-001">
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeCreateModal()">Cancel</button>
-                <button class="btn-primary" style="width:auto;padding:0.5rem 1.5rem;" id="createBtn" onclick="document.getElementById('createDocForm').requestSubmit()">
-                    Create
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div id="bulk-create-modal" class="modal-overlay hidden">
-        <div class="modal">
-            <div class="modal-header">
-                <h3>Bulk Create Document Types</h3>
-                <button class="modal-close" onclick="closeBulkCreateModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="bulk-modal-global-error" class="hidden global-error"></div>
-                <form id="bulkCreateDocForm" onsubmit="handleBulkCreate(event)">
-                    <div class="mb-4">
-                        <label class="label">Document Type Names * (one per line)</label>
-                        <textarea id="bulk-doc-names" class="form-input" rows="6" placeholder="Tax Invoice&#10;Proforma Invoice&#10;Credit Note&#10;Debit Note" required></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeBulkCreateModal()">Cancel</button>
-                <button class="btn-primary" style="width:auto;padding:0.5rem 1.5rem;" id="bulkCreateBtn" onclick="document.getElementById('bulkCreateDocForm').requestSubmit()">
-                    Create All
-                </button>
-            </div>
+            <div id="rabbit-search" class="hidden"></div>
+            <div id="rabbit-table" class="hidden"></div>
         </div>
     </div>
 
     <script src="js/api.js"></script>
     <script src="js/sidebar.js"></script>
+    <script src="js/rabbit-table.js"></script>
+    <script src="js/rabbit-search.js"></script>
+    <script src="js/rabbit-card.js"></script>
+    <script src="js/rabbit-actions.js"></script>
     <script>
-        if (!isLoggedIn()) { window.location.href = 'login.html'; } else {
-            renderSidebar('documents');
-        }
-
         let companiesData = [];
         let allDocTypes = [];
-        let allRows = [];
-        let currentSort = { key: null, dir: 'asc' };
 
         (async function() {
-            const meResult = await apiCall('GET', '/auth/me');
-            if (!meResult || meResult.status !== 200) {
-                clearAuth();
-                window.location.href = 'login.html';
-                return;
-            }
-
-            const user = meResult.data;
-            const isSuperAdmin = (user.companies || []).some(c => c.role && c.role.name === 'SUPER_ADMIN');
-            if (!isSuperAdmin) {
-                window.location.href = 'dashboard.html';
-                return;
-            }
+            renderSidebar('documents');
+            const user = await requireAuth();
+            if (!user) return;
 
             let features = {};
             (user.companies || []).forEach(c => {
@@ -168,6 +87,15 @@
             });
 
             showAdminNavLinks(features);
+
+            if (!hasPermission('documents', 'create')) {
+                document.getElementById('create-buttons').style.display = 'none';
+            }
+
+            if (isSuperAdmin()) {
+                document.getElementById('filter-section').style.display = '';
+            }
+
             const companyResult = await apiCall('GET', '/companies');
             if (companyResult && companyResult.status === 200) {
                 companiesData = companyResult.data || [];
@@ -178,6 +106,13 @@
                     opt.textContent = c.name;
                     select.appendChild(opt);
                 });
+
+                var savedFilter = localStorage.getItem('documents_filter');
+                if (savedFilter && companiesData.some(function(c) { return c.companyId === savedFilter; })) {
+                    select.value = savedFilter;
+                    document.getElementById('loading').classList.remove('hidden');
+                    loadDocumentTypes();
+                }
             }
 
             if (companiesData.length === 0) {
@@ -188,27 +123,44 @@
             }
         })();
 
+        function onFilterChange() {
+            var companyId = document.getElementById('filter-company').value;
+            localStorage.setItem('documents_filter', companyId);
+            loadDocumentTypes();
+        }
+
         async function loadDocumentTypes() {
-            const companyId = document.getElementById('filter-company').value;
+            var companyId = document.getElementById('filter-company').value;
+
+            var createLink = document.getElementById('add-type-link');
+            var bulkLink = document.getElementById('bulk-create-link');
+            if (companyId) {
+                createLink.href = 'document-create.html?companyId=' + companyId;
+                bulkLink.href = 'document-bulk-create.html?companyId=' + companyId;
+            } else {
+                createLink.href = 'document-create.html';
+                bulkLink.href = 'document-bulk-create.html';
+            }
 
             document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('table-wrapper').classList.add('hidden');
-            document.getElementById('search-container').classList.add('hidden');
+            document.getElementById('rabbit-table').classList.add('hidden');
+            document.getElementById('rabbit-search').classList.add('hidden');
             document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('error-state').classList.add('hidden');
 
             allDocTypes = [];
 
-            const companiesToQuery = companyId
-                ? companiesData.filter(c => c.companyId === companyId)
+            var companiesToQuery = companyId
+                ? companiesData.filter(function(c) { return c.companyId === companyId; })
                 : companiesData;
 
             for (const company of companiesToQuery) {
                 setCompanyId(company.companyId);
-                const result = await apiCall('GET', '/companies/' + company.companyId + '/document-types');
+                var result = await apiCall('GET', '/companies/' + company.companyId + '/document-types');
                 setCompanyId(null);
 
                 if (result && result.status === 200) {
-                    const docs = (result.data || []).map(d => ({ ...d, companyName: company.name }));
+                    var docs = (result.data || []).map(function(d) { return Object.assign({}, d, { companyName: company.name }); });
                     allDocTypes = allDocTypes.concat(docs);
                 }
             }
@@ -222,199 +174,80 @@
                 return;
             }
 
-            document.getElementById('search-container').classList.remove('hidden');
-            document.getElementById('table-wrapper').classList.remove('hidden');
-            renderTable(allDocTypes);
-        }
+            document.getElementById('rabbit-search').classList.remove('hidden');
+            document.getElementById('rabbit-table').classList.remove('hidden');
 
-        function renderTable(data) {
-            const tbody = document.getElementById('docs-tbody');
-            tbody.innerHTML = '';
-            allRows = [];
-
-            data.forEach(d => {
-                const tr = document.createElement('tr');
-                const creatorName = d.creator ? [d.creator.firstName, d.creator.lastName].filter(Boolean).join(' ') || d.creator.username : '-';
-                const updaterName = d.updater ? [d.updater.firstName, d.updater.lastName].filter(Boolean).join(' ') || d.updater.username : '-';
-                const created = new Date(d.createdAt).toLocaleDateString();
-                const docNumber = d.documentNumber || '-';
-                const companyName = d.companyName || '-';
-                const searchText = [d.name, docNumber, companyName, creatorName, updaterName, created].join(' ').toLowerCase();
-                tr.setAttribute('data-search', searchText);
-                tr.innerHTML =
-                    '<td class="font-medium">' + (d.name || '-') + '</td>' +
-                    '<td>' + docNumber + '</td>' +
-                    '<td>' + companyName + '</td>' +
-                    '<td>' + creatorName + '</td>' +
-                    '<td>' + updaterName + '</td>' +
-                    '<td>' + created + '</td>' +
-                    '<td><button class="btn-secondary btn-sm" style="color:#dc2626;" onclick="handleDelete(\'' + d.documentTypeId + '\')">Delete</button></td>';
-                allRows.push({ tr, data: d });
-                tbody.appendChild(tr);
-            });
-        }
-
-        function filterTable() {
-            const query = document.getElementById('search-input').value.toLowerCase();
-            allRows.forEach(row => {
-                const text = row.tr.getAttribute('data-search');
-                row.tr.style.display = text.includes(query) ? '' : 'none';
-            });
-        }
-
-        function sortTable(key) {
-            document.querySelectorAll('.th-sortable').forEach(th => {
-                if (th.getAttribute('data-sort') !== key) {
-                    th.classList.remove('sort-asc', 'sort-desc', 'sort-active');
+            RabbitSearch.render({
+                containerId: 'rabbit-search',
+                placeholder: 'Search document types...',
+                sortFields: [
+                    { key: 'name', label: 'Name' },
+                    { key: 'companyName', label: 'Company' },
+                    { key: 'createdAt', label: 'Date' }
+                ],
+                onSearch: function(query) {
+                    RabbitTable.search('rabbit-table', query);
+                },
+                onSort: function(field, order) {
+                    allDocTypes.sort(function(a, b) {
+                        var va = a[field] || '';
+                        var vb = b[field] || '';
+                        if (field === 'createdAt') {
+                            va = new Date(va).getTime();
+                            vb = new Date(vb).getTime();
+                            return order === 'asc' ? va - vb : vb - va;
+                        }
+                        va = String(va).toLowerCase();
+                        vb = String(vb).toLowerCase();
+                        if (va < vb) return order === 'asc' ? -1 : 1;
+                        if (va > vb) return order === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+                    renderDocTable();
                 }
             });
 
-            if (currentSort.key === key) {
-                currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
-            } else {
-                currentSort.key = key;
-                currentSort.dir = 'asc';
-            }
+            renderDocTable();
+        }
 
-            const th = document.querySelector('.th-sortable[data-sort="' + key + '"]');
-            if (th) {
-                th.classList.add('sort-active');
-                th.classList.add(currentSort.dir === 'asc' ? 'sort-asc' : 'sort-desc');
-            }
-
-            allDocTypes.sort((a, b) => {
-                let va = a[key] || '';
-                let vb = b[key] || '';
-                if (key === 'createdAt') {
-                    va = new Date(va).getTime();
-                    vb = new Date(vb).getTime();
-                } else {
-                    va = String(va).toLowerCase();
-                    vb = String(vb).toLowerCase();
-                }
-                if (va < vb) return currentSort.dir === 'asc' ? -1 : 1;
-                if (va > vb) return currentSort.dir === 'asc' ? 1 : -1;
-                return 0;
+        function renderDocTable() {
+            RabbitTable.render({
+                containerId: 'rabbit-table',
+                type: 'documents',
+                columns: [
+                    { key: 'name', label: 'Name', sortable: true },
+                    { key: 'documentNumber', label: 'Doc Number', sortable: false, render: function(row) { return row.documentNumber || '-'; } },
+                    { key: 'companyName', label: 'Company', sortable: true },
+                    { key: 'createdBy', label: 'Created By', sortable: false },
+                    { key: 'createdAt', label: 'Created', sortable: true, render: function(row) {
+                        return new Date(row.createdAt).toLocaleDateString();
+                    }}
+                ],
+                data: allDocTypes.map(function(d) {
+                    return {
+                        id: d.documentTypeId,
+                        name: d.name,
+                        documentNumber: d.documentNumber,
+                        companyName: d.companyName,
+                        createdBy: d.creator ? d.creator.username : '-',
+                        createdAt: d.createdAt
+                    };
+                }),
+                selected: [],
+                onRefresh: function() { loadDocumentTypes(); },
+                actions: function(row) {
+                    return RabbitActions.renderActions('documents', row, { deleteFunction: 'handleDelete(\'' + row.id + '\')' });
+                },
+                searchFields: ['name', 'documentNumber', 'companyName']
             });
-
-            renderTable(allDocTypes);
-            filterTable();
-        }
-
-        function openCreateModal() {
-            const companyId = document.getElementById('filter-company').value;
-            if (!companyId) { alert('Please select a company first.'); return; }
-            document.getElementById('create-modal').classList.remove('hidden');
-            document.getElementById('createDocForm').reset();
-            document.getElementById('modal-global-error').classList.add('hidden');
-        }
-
-        function closeCreateModal() {
-            document.getElementById('create-modal').classList.add('hidden');
-        }
-
-        async function handleCreate(e) {
-            e.preventDefault();
-            const companyId = document.getElementById('filter-company').value;
-            const btn = document.getElementById('createBtn');
-            btn.disabled = true;
-            btn.textContent = 'Creating...';
-            document.getElementById('modal-global-error').classList.add('hidden');
-
-            const body = {
-                name: document.getElementById('doc-name').value.trim(),
-                documentNumber: document.getElementById('doc-number').value.trim() || null
-            };
-
-            try {
-                setCompanyId(companyId);
-                const result = await apiCall('POST', '/companies/' + companyId + '/document-types', body);
-                setCompanyId(null);
-
-                btn.disabled = false;
-                btn.textContent = 'Create';
-
-                if (result && (result.status === 200 || result.status === 201)) {
-                    closeCreateModal();
-                    await loadDocumentTypes();
-                } else if (result && result.status === 401) {
-                    clearAuth();
-                    window.location.href = 'login.html';
-                } else {
-                    document.getElementById('modal-global-error').textContent = (result && result.data && (result.data.error || result.data.message)) || 'Failed to create document type';
-                    document.getElementById('modal-global-error').classList.remove('hidden');
-                }
-            } catch (err) {
-                btn.disabled = false;
-                btn.textContent = 'Create';
-                document.getElementById('modal-global-error').textContent = 'Unable to connect to server.';
-                document.getElementById('modal-global-error').classList.remove('hidden');
-            }
-        }
-
-        function openBulkCreateModal() {
-            const companyId = document.getElementById('filter-company').value;
-            if (!companyId) { alert('Please select a company first.'); return; }
-            document.getElementById('bulk-create-modal').classList.remove('hidden');
-            document.getElementById('bulkCreateDocForm').reset();
-            document.getElementById('bulk-modal-global-error').classList.add('hidden');
-        }
-
-        function closeBulkCreateModal() {
-            document.getElementById('bulk-create-modal').classList.add('hidden');
-        }
-
-        async function handleBulkCreate(e) {
-            e.preventDefault();
-            const companyId = document.getElementById('filter-company').value;
-            const btn = document.getElementById('bulkCreateBtn');
-            btn.disabled = true;
-            btn.textContent = 'Creating...';
-            document.getElementById('bulk-modal-global-error').classList.add('hidden');
-
-            const raw = document.getElementById('bulk-doc-names').value;
-            const names = raw.split('\n').map(s => s.trim()).filter(s => s.length > 0);
-
-            if (names.length === 0) {
-                btn.disabled = false;
-                btn.textContent = 'Create All';
-                document.getElementById('bulk-modal-global-error').textContent = 'Please enter at least one name.';
-                document.getElementById('bulk-modal-global-error').classList.remove('hidden');
-                return;
-            }
-
-            try {
-                setCompanyId(companyId);
-                const result = await apiCall('POST', '/companies/' + companyId + '/document-types/bulk', { names });
-                setCompanyId(null);
-
-                btn.disabled = false;
-                btn.textContent = 'Create All';
-
-                if (result && (result.status === 200 || result.status === 201)) {
-                    closeBulkCreateModal();
-                    await loadDocumentTypes();
-                } else if (result && result.status === 401) {
-                    clearAuth();
-                    window.location.href = 'login.html';
-                } else {
-                    document.getElementById('bulk-modal-global-error').textContent = (result && result.data && (result.data.error || result.data.message)) || 'Failed to create document types';
-                    document.getElementById('bulk-modal-global-error').classList.remove('hidden');
-                }
-            } catch (err) {
-                btn.disabled = false;
-                btn.textContent = 'Create All';
-                document.getElementById('bulk-modal-global-error').textContent = 'Unable to connect to server.';
-                document.getElementById('bulk-modal-global-error').classList.remove('hidden');
-            }
         }
 
         async function handleDelete(documentTypeId) {
             if (!confirm('Are you sure you want to delete this document type?')) return;
 
-            const companyId = document.getElementById('filter-company').value;
+            var companyId = document.getElementById('filter-company').value;
             setCompanyId(companyId);
-            const result = await apiCall('DELETE', '/companies/' + companyId + '/document-types/' + documentTypeId);
+            var result = await apiCall('DELETE', '/companies/' + companyId + '/document-types/' + documentTypeId);
             setCompanyId(null);
 
             if (result && (result.status === 200 || result.status === 204)) {

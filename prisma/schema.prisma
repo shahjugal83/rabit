@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -31,6 +30,9 @@ model User {
   updatedRoles       Role[]          @relation("updatedRoles")
   createdDocs        DocumentType[]  @relation("createdDocs")
   updatedDocs        DocumentType[]  @relation("updatedDocs")
+  createdMaterials   Material[]      @relation("createdMaterials")
+  updatedMaterials   Material[]      @relation("updatedMaterials")
+  createdInvoices    Invoice[]       @relation("createdInvoices")
 
   @@map("users")
 }
@@ -56,6 +58,8 @@ model Company {
   companyUsers  CompanyUser[]
   documentTypes DocumentType[]
   roles         Role[]
+  featureMgt    FeatureMgt?
+  materialCompanies MaterialCompany[]
 
   @@map("companies")
 }
@@ -146,6 +150,7 @@ model DocumentType {
   documentTypeId String   @id @default(uuid()) @map("document_type_id")
   companyId      String   @map("company_id")
   name           String
+  documentNumber String?  @map("document_number")
   createdBy      String?  @map("created_by")
   updatedBy      String?  @map("updated_by")
   createdAt      DateTime @default(now()) @map("created_at")
@@ -157,4 +162,85 @@ model DocumentType {
 
   @@unique([companyId, name])
   @@map("document_types")
+}
+
+model FeatureMgt {
+  id                    String   @id @default(uuid())
+  companyId             String   @unique @map("company_id")
+  userFeature           Boolean  @default(false) @map("user_feature")
+  isInvoiceManagement   Boolean  @default(false) @map("is_invoice_management")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [companyId])
+
+  @@map("feature_mgt")
+}
+
+model Material {
+  materialId   String   @id @default(uuid()) @map("material_id")
+  materialName String   @map("material_name")
+  createdBy    String?  @map("created_by")
+  updatedBy    String?  @map("updated_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  creator        User?              @relation("createdMaterials", fields: [createdBy], references: [userId])
+  updater        User?              @relation("updatedMaterials", fields: [updatedBy], references: [userId])
+  companies      MaterialCompany[]
+  identifiers    MaterialIdentifier[]
+
+  @@unique([materialName])
+  @@map("materials")
+}
+
+model MaterialCompany {
+  id        String   @id @default(uuid())
+  materialId String  @map("material_id")
+  companyId String  @map("company_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  material Material @relation(fields: [materialId], references: [materialId], onDelete: Cascade)
+  company  Company  @relation(fields: [companyId], references: [companyId], onDelete: Cascade)
+
+  @@unique([materialId, companyId])
+  @@map("material_companies")
+}
+
+model MaterialIdentifier {
+  identifierId   String   @id @default(uuid()) @map("identifier_id")
+  materialId     String   @map("material_id")
+  identifierName String   @map("identifier_name")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  material Material @relation(fields: [materialId], references: [materialId], onDelete: Cascade)
+
+  @@unique([materialId, identifierName])
+  @@map("material_identifiers")
+}
+
+model Invoice {
+  invoiceId      Int      @id @default(autoincrement()) @map("invoice_id")
+  documentNumber String   @map("document_number")
+  documentName   String   @map("document_name")
+  companyName    String   @map("company_name")
+  createdBy      String?  @map("created_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  creator User?             @relation("createdInvoices", fields: [createdBy], references: [userId])
+  items   InvoiceItem[]
+
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  itemId         Int    @id @default(autoincrement()) @map("item_id")
+  invoiceId      Int    @map("invoice_id")
+  materialName   String @map("material_name")
+  identifierName String @map("identifier_name")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [invoiceId], onDelete: Cascade)
+
+  @@map("invoice_items")
 }

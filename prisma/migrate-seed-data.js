@@ -1,7 +1,10 @@
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
 const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const { PrismaNeonHTTP } = require('@prisma/adapter-neon');
+
+const adapter = new PrismaNeonHTTP({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   const user = await prisma.user.findUnique({ where: { email: 'admin@test.com' } });

@@ -1,11 +1,17 @@
 {
+  "version": 2,
   "buildCommand": "npx prisma generate",
   "outputDirectory": "public",
   "installCommand": "npm install",
+  "framework": null,
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api" },
-    { "source": "/health", "destination": "/api" },
-    { "source": "/swagger-ui.html", "destination": "/api" },
-    { "source": "/v3/api-docs", "destination": "/api" }
+    {
+      "source": "/api/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/health",
+      "destination": "/api"
+    }
   ]
 }

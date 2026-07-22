@@ -23,18 +23,22 @@
         <div id="sidebar-container"></div>
 
         <div class="main-content">
-            <div class="flex items-center justify-between mb-6">
+            <div class="page-header">
                 <h2 class="text-xl font-bold text-gray-900">Materials</h2>
-                <button onclick="openCreateModal()" class="btn-primary" style="width:auto;padding:0.5rem 1.25rem;">
+                <a href="material-create.html" class="btn-primary" style="width:auto;padding:0.5rem 1.25rem;text-decoration:none;" id="create-btn">
                     + Add Material
-                </button>
+                </a>
             </div>
 
-            <div class="mb-4">
+            <div id="filter-section" class="mb-4">
                 <label class="label">Filter by Company</label>
-                <select id="filter-company" class="form-input" style="max-width:20rem;" onchange="loadMaterials()">
+                <select id="filter-company" class="form-input" style="max-width:20rem;" onchange="onFilterChange()">
                     <option value="">All companies</option>
                 </select>
+            </div>
+
+            <div id="error-state" class="hidden text-center py-12">
+                <p id="error-message" class="text-red-500"></p>
             </div>
 
             <div id="loading" class="text-center py-12">
@@ -46,107 +50,31 @@
                 <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                 <h3 class="text-lg font-semibold text-gray-700 mb-2">No materials yet</h3>
                 <p class="text-gray-500 mb-6">Add a material to get started.</p>
-                <button onclick="openCreateModal()" class="btn-primary" style="width:auto;padding:0.625rem 2rem;display:inline-block;">
+                <a href="material-create.html" class="btn-primary" style="width:auto;padding:0.625rem 2rem;display:inline-block;text-decoration:none;">
                     + Add Material
-                </button>
+                </a>
             </div>
 
-            <div id="search-container" class="hidden">
-                <div class="search-bar">
-                    <svg class="search-bar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    <input type="text" id="search-input" placeholder="Search materials..." oninput="filterTable()">
-                </div>
-            </div>
-
-            <div id="table-wrapper" class="hidden table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="th-sortable" data-sort="name" onclick="sortTable('name')">Material Name</th>
-                            <th>Companies</th>
-                            <th>Identifiers</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="materials-tbody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div id="create-modal" class="modal-overlay hidden">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 id="modal-title">Add Material</h3>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="modal-global-error" class="hidden global-error"></div>
-                <form id="materialForm" onsubmit="handleSave(event)">
-                    <input type="hidden" id="edit-material-id" value="">
-                    <div class="mb-4">
-                        <label class="label">Material Name *</label>
-                        <input type="text" id="material-name" class="form-input" placeholder="e.g. Cement, Steel Rod" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="label">Assign to Companies *</label>
-                        <div id="companies-checkboxes" class="grid grid-cols-2 gap-2 mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                            <p class="text-gray-400 text-sm">Loading companies...</p>
-                        </div>
-                    </div>
-                    <div class="mb-4">
-                        <label class="label">Identifiers (Units)</label>
-                        <div class="flex gap-2 mb-2">
-                            <select id="identifier-select" class="form-input" style="flex:1;">
-                                <option value="">Select unit...</option>
-                                <option value="KG">KG (Kilogram)</option>
-                                <option value="G">G (Gram)</option>
-                                <option value="Ltr">Ltr (Litre)</option>
-                                <option value="Unit">Unit</option>
-                                <option value="Mt">Mt (Metric Ton)</option>
-                                <option value="Bag">Bag</option>
-                                <option value="Pcs">Pcs (Pieces)</option>
-                                <option value="Box">Box</option>
-                                <option value="Roll">Roll</option>
-                                <option value="Set">Set</option>
-                            </select>
-                            <button type="button" class="btn-secondary" style="width:auto;padding:0.5rem 1rem;" onclick="addIdentifier()">Add</button>
-                        </div>
-                        <div id="identifiers-list" class="flex flex-wrap gap-2"></div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeModal()">Cancel</button>
-                <button class="btn-primary" style="width:auto;padding:0.5rem 1.5rem;" id="saveBtn" onclick="document.getElementById('materialForm').requestSubmit()">
-                    Create
-                </button>
-            </div>
+            <div id="rabbit-search" class="hidden"></div>
+            <div id="rabbit-table" class="hidden"></div>
         </div>
     </div>
 
     <script src="js/api.js"></script>
     <script src="js/sidebar.js"></script>
+    <script src="js/rabbit-table.js"></script>
+    <script src="js/rabbit-search.js"></script>
+    <script src="js/rabbit-card.js"></script>
+    <script src="js/rabbit-actions.js"></script>
     <script>
-        if (!isLoggedIn()) { window.location.href = 'login.html'; } else {
-            renderSidebar('materials');
-        }
-
         let companiesData = [];
         let allMaterials = [];
-        let allRows = [];
-        let currentSort = { key: null, dir: 'asc' };
-        let selectedIdentifiers = [];
 
         (async function() {
-            const meResult = await apiCall('GET', '/auth/me');
-            if (!meResult || meResult.status !== 200) {
-                clearAuth();
-                window.location.href = 'login.html';
-                return;
-            }
+            renderSidebar('materials');
+            const user = await requireAuth();
+            if (!user) return;
 
-            const user = meResult.data;
             let features = {};
             (user.companies || []).forEach(c => {
                 if (c.features && c.features.invoiceManagement) features.invoiceManagement = true;
@@ -158,6 +86,14 @@
             }
 
             showAdminNavLinks(features);
+
+            if (!hasPermission('materials', 'create')) {
+                document.getElementById('create-btn').classList.add('hidden');
+            }
+
+            if (!isSuperAdmin()) {
+                document.getElementById('filter-section').classList.add('hidden');
+            }
 
             const companyResult = await apiCall('GET', '/companies');
             if (companyResult && companyResult.status === 200) {
@@ -175,18 +111,49 @@
             await loadMaterials();
         })();
 
+        function onFilterChange() {
+            var companyId = document.getElementById('filter-company').value;
+            var createBtn = document.getElementById('create-btn');
+            if (companyId) {
+                createBtn.href = 'material-create.html?companyId=' + companyId;
+            } else {
+                createBtn.href = 'material-create.html';
+            }
+            localStorage.setItem('materials_filter', companyId);
+            loadMaterials();
+        }
+
         async function loadMaterials() {
             const filterCompanyId = document.getElementById('filter-company').value;
 
             document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('table-wrapper').classList.add('hidden');
-            document.getElementById('search-container').classList.add('hidden');
+            document.getElementById('rabbit-table').classList.add('hidden');
+            document.getElementById('rabbit-search').classList.add('hidden');
             document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('error-state').classList.add('hidden');
 
             const result = await apiCall('GET', '/materials');
             document.getElementById('loading').classList.add('hidden');
 
-            allMaterials = (result && result.status === 200) ? (result.data || []) : [];
+            if (!result || result.status === 0) {
+                document.getElementById('error-message').textContent = 'Unable to connect to server';
+                document.getElementById('error-state').classList.remove('hidden');
+                return;
+            }
+
+            if (result.status === 403) {
+                document.getElementById('error-message').textContent = 'Access denied — invoice management not enabled';
+                document.getElementById('error-state').classList.remove('hidden');
+                return;
+            }
+
+            if (result.status !== 200) {
+                document.getElementById('error-message').textContent = 'Server error — please try again';
+                document.getElementById('error-state').classList.remove('hidden');
+                return;
+            }
+
+            allMaterials = result.data || [];
 
             if (filterCompanyId) {
                 allMaterials = allMaterials.filter(m =>
@@ -199,207 +166,63 @@
                 return;
             }
 
-            document.getElementById('search-container').classList.remove('hidden');
-            document.getElementById('table-wrapper').classList.remove('hidden');
-            renderTable(allMaterials);
-        }
+            document.getElementById('rabbit-search').classList.remove('hidden');
+            document.getElementById('rabbit-table').classList.remove('hidden');
 
-        function renderTable(data) {
-            const tbody = document.getElementById('materials-tbody');
-            tbody.innerHTML = '';
-            allRows = [];
-
-            data.forEach(m => {
-                const tr = document.createElement('tr');
-                const companyNames = m.companies.map(c => c.name).join(', ') || '-';
-                const identifierNames = m.identifiers.map(i => i.name).join(', ') || '-';
-                const searchText = [m.name, companyNames, identifierNames].join(' ').toLowerCase();
-                tr.setAttribute('data-search', searchText);
-                tr.innerHTML =
-                    '<td class="font-medium">' + (m.name || '-') + '</td>' +
-                    '<td>' + companyNames + '</td>' +
-                    '<td>' + identifierNames + '</td>' +
-                    '<td>' +
-                        '<button class="btn-secondary btn-sm" onclick="openEditModal(\'' + m.materialId + '\')">Edit</button> ' +
-                        '<button class="btn-secondary btn-sm" style="color:#dc2626;" onclick="handleDelete(\'' + m.materialId + '\')">Delete</button>' +
-                    '</td>';
-                allRows.push({ tr, data: m });
-                tbody.appendChild(tr);
-            });
-        }
-
-        function filterTable() {
-            const query = document.getElementById('search-input').value.toLowerCase();
-            allRows.forEach(row => {
-                const text = row.tr.getAttribute('data-search');
-                row.tr.style.display = text.includes(query) ? '' : 'none';
-            });
-        }
-
-        function sortTable(key) {
-            document.querySelectorAll('.th-sortable').forEach(th => {
-                if (th.getAttribute('data-sort') !== key) {
-                    th.classList.remove('sort-asc', 'sort-desc', 'sort-active');
+            RabbitSearch.render({
+                containerId: 'rabbit-search',
+                placeholder: 'Search materials...',
+                sortFields: [
+                    { key: 'name', label: 'Name' }
+                ],
+                onSearch: function(query) {
+                    RabbitTable.search('rabbit-table', query);
+                },
+                onSort: function(field, order) {
+                    allMaterials.sort(function(a, b) {
+                        var va = a[field] || '';
+                        var vb = b[field] || '';
+                        va = String(va).toLowerCase();
+                        vb = String(vb).toLowerCase();
+                        if (va < vb) return order === 'asc' ? -1 : 1;
+                        if (va > vb) return order === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+                    renderMaterialTable();
                 }
             });
 
-            if (currentSort.key === key) {
-                currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
-            } else {
-                currentSort.key = key;
-                currentSort.dir = 'asc';
-            }
+            renderMaterialTable();
+        }
 
-            const th = document.querySelector('.th-sortable[data-sort="' + key + '"]');
-            if (th) {
-                th.classList.add('sort-active');
-                th.classList.add(currentSort.dir === 'asc' ? 'sort-asc' : 'sort-desc');
-            }
-
-            allMaterials.sort((a, b) => {
-                let va = a[key] || '';
-                let vb = b[key] || '';
-                va = String(va).toLowerCase();
-                vb = String(vb).toLowerCase();
-                if (va < vb) return currentSort.dir === 'asc' ? -1 : 1;
-                if (va > vb) return currentSort.dir === 'asc' ? 1 : -1;
-                return 0;
+        function renderMaterialTable() {
+            RabbitTable.render({
+                containerId: 'rabbit-table',
+                type: 'materials',
+                columns: [
+                    { key: 'name', label: 'Material Name', sortable: true },
+                    { key: 'companies', label: 'Companies', sortable: false, render: function(row) {
+                        return row.companies.map(function(c) { return c.name; }).join(', ') || '-';
+                    }},
+                    { key: 'identifiers', label: 'Identifiers', sortable: false, render: function(row) {
+                        return row.identifiers.map(function(i) { return i.name; }).join(', ') || '-';
+                    }}
+                ],
+                data: allMaterials.map(function(m) {
+                    return {
+                        id: m.materialId,
+                        name: m.name,
+                        companies: m.companies,
+                        identifiers: m.identifiers
+                    };
+                }),
+                selected: [],
+                onRefresh: function() { loadMaterials(); },
+                actions: function(row) {
+                    return RabbitActions.renderActions('materials', row, { deleteFunction: 'handleDelete(\'' + row.id + '\')' });
+                },
+                searchFields: ['name']
             });
-
-            renderTable(allMaterials);
-            filterTable();
-        }
-
-        function openCreateModal() {
-            document.getElementById('create-modal').classList.remove('hidden');
-            document.getElementById('modal-title').textContent = 'Add Material';
-            document.getElementById('materialForm').reset();
-            document.getElementById('edit-material-id').value = '';
-            document.getElementById('modal-global-error').classList.add('hidden');
-            document.getElementById('saveBtn').textContent = 'Create';
-            selectedIdentifiers = [];
-            renderIdentifiersList();
-            renderCompanyCheckboxes([]);
-        }
-
-        function openEditModal(materialId) {
-            const material = allMaterials.find(m => m.materialId === materialId);
-            if (!material) return;
-
-            document.getElementById('create-modal').classList.remove('hidden');
-            document.getElementById('modal-title').textContent = 'Edit Material';
-            document.getElementById('edit-material-id').value = materialId;
-            document.getElementById('material-name').value = material.name;
-            document.getElementById('modal-global-error').classList.add('hidden');
-            document.getElementById('saveBtn').textContent = 'Save Changes';
-
-            selectedIdentifiers = material.identifiers.map(i => i.name);
-            renderIdentifiersList();
-
-            const selectedCompanyIds = material.companies.map(c => c.companyId);
-            renderCompanyCheckboxes(selectedCompanyIds);
-        }
-
-        function closeModal() {
-            document.getElementById('create-modal').classList.add('hidden');
-        }
-
-        function renderCompanyCheckboxes(selectedIds) {
-            const container = document.getElementById('companies-checkboxes');
-            container.innerHTML = '';
-            if (companiesData.length === 0) {
-                container.innerHTML = '<p class="text-gray-400 text-sm">No companies available.</p>';
-                return;
-            }
-            companiesData.forEach(c => {
-                const checked = selectedIds.includes(c.companyId) ? 'checked' : '';
-                container.innerHTML +=
-                    '<label class="flex items-center gap-2 text-sm cursor-pointer">' +
-                    '<input type="checkbox" class="company-checkbox" value="' + c.companyId + '" ' + checked + '>' +
-                    '<span>' + c.name + '</span>' +
-                    '</label>';
-            });
-        }
-
-        function addIdentifier() {
-            const select = document.getElementById('identifier-select');
-            const value = select.value;
-            if (!value) return;
-            if (selectedIdentifiers.includes(value)) {
-                alert('Identifier already added.');
-                return;
-            }
-            selectedIdentifiers.push(value);
-            renderIdentifiersList();
-            select.value = '';
-        }
-
-        function removeIdentifier(name) {
-            selectedIdentifiers = selectedIdentifiers.filter(i => i !== name);
-            renderIdentifiersList();
-        }
-
-        function renderIdentifiersList() {
-            const container = document.getElementById('identifiers-list');
-            container.innerHTML = '';
-            selectedIdentifiers.forEach(name => {
-                const tag = document.createElement('span');
-                tag.className = 'inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-sm px-2.5 py-1 rounded-full';
-                tag.innerHTML = name + ' <button type="button" onclick="removeIdentifier(\'' + name + '\')" class="text-blue-600 hover:text-blue-900 font-bold">&times;</button>';
-                container.appendChild(tag);
-            });
-        }
-
-        async function handleSave(e) {
-            e.preventDefault();
-            const editId = document.getElementById('edit-material-id').value;
-            const btn = document.getElementById('saveBtn');
-            btn.disabled = true;
-            btn.textContent = editId ? 'Saving...' : 'Creating...';
-            document.getElementById('modal-global-error').classList.add('hidden');
-
-            const companyIds = Array.from(document.querySelectorAll('.company-checkbox:checked')).map(cb => cb.value);
-            if (companyIds.length === 0) {
-                btn.disabled = false;
-                btn.textContent = editId ? 'Save Changes' : 'Create';
-                document.getElementById('modal-global-error').textContent = 'Please select at least one company.';
-                document.getElementById('modal-global-error').classList.remove('hidden');
-                return;
-            }
-
-            const body = {
-                name: document.getElementById('material-name').value.trim(),
-                companyIds: companyIds,
-                identifiers: selectedIdentifiers
-            };
-
-            try {
-                let result;
-                if (editId) {
-                    result = await apiCall('PUT', '/materials/' + editId, body);
-                } else {
-                    result = await apiCall('POST', '/materials', body);
-                }
-
-                btn.disabled = false;
-                btn.textContent = editId ? 'Save Changes' : 'Create';
-
-                if (result && (result.status === 200 || result.status === 201)) {
-                    closeModal();
-                    await loadMaterials();
-                } else if (result && result.status === 401) {
-                    clearAuth();
-                    window.location.href = 'login.html';
-                } else {
-                    document.getElementById('modal-global-error').textContent = (result && result.data && (result.data.error || result.data.message)) || 'Failed to save material';
-                    document.getElementById('modal-global-error').classList.remove('hidden');
-                }
-            } catch (err) {
-                btn.disabled = false;
-                btn.textContent = editId ? 'Save Changes' : 'Create';
-                document.getElementById('modal-global-error').textContent = 'Unable to connect to server.';
-                document.getElementById('modal-global-error').classList.remove('hidden');
-            }
         }
 
         async function handleDelete(materialId) {

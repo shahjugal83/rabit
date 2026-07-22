@@ -1,295 +1,377 @@
 const express = require('express');
 const multer = require('multer');
-const crypto = require('crypto');
-const bcrypt = require('bcryptjs');
-const prisma = require('../utils/prisma');
 const { authenticate } = require('../middleware/auth');
-const { UserAlreadyExists, ResourceNotFound, BadRequest } = require('../middleware/errorHandler');
+const { CompanyService } = require('../services/CompanyService');
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 } });
-const VERIFICATION_EXPIRATION = parseInt(process.env.VERIFICATION_EXPIRATION, 10) || 3600000;
 
-const MAX_FILE_SIZE = 50 * 1024;
-
-function generateUrlSlug(name) {
-  let slug = name
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-  return slug;
-}
-
-async function buildCompanyResponse(companyId, role) {
-  const company = await prisma.company.findUnique({ where: { companyId } });
-  return {
-    companyId: company.companyId,
-    name: company.name,
-    urlSlug: company.urlSlug,
-    description: company.description,
-    addressLine1: company.addressLine1,
-    addressLine2: company.addressLine2,
-    city: company.city,
-    state: company.state,
-    country: company.country,
-    pinCode: company.pinCode,
-    contactNumber: company.contactNumber,
-    hasLogo: company.logo !== null,
-    createdBy: company.createdBy,
-    createdAt: company.createdAt,
-    updatedAt: company.updatedAt,
-    active: company.active,
-    userRole: role,
-  };
-}
-
-async function requireSuperAdmin(userId, companyId) {
-  const cu = await prisma.companyUser.findUnique({
-    where: { userId_companyId: { userId, companyId } },
-  });
-    if (!cu || cu.role !== 'SUPER_ADMIN') {
-      throw new BadRequest('Only SUPER_ADMIN can perform this action');
-    }
-}
-
-// POST /companies (multipart)
+/**
+ * @swagger
+ * /companies:
+ *   post:
+ *     tags: [Companies]
+ *     summary: Create a new company
+ *     description: Creates a company and automatically assigns the creator as SUPER_ADMIN. Accepts an optional logo image (max 50KB, stored as PNG).
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [name, addressLine1, city, state, country, pinCode, contactNumber]
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Acme Corp"
+ *               description:
+ *                 type: string
+ *                 example: "A leading tech company"
+ *               addressLine1:
+ *                 type: string
+ *                 example: "123 Tech Park"
+ *               addressLine2:
+ *                 type: string
+ *               city:
+ *                 type: string
+ *                 example: "Mumbai"
+ *               state:
+ *                 type: string
+ *                 example: "Maharashtra"
+ *               country:
+ *                 type: string
+ *                 example: "India"
+ *               pinCode:
+ *                 type: string
+ *                 example: "400001"
+ *               contactNumber:
+ *                 type: string
+ *                 example: "9876543210"
+ *               logo:
+ *                 type: string
+ *                 format: binary
+ *                 description: Optional company logo (PNG, max 50KB)
+ *     responses:
+ *       201:
+ *         description: Company created, creator assigned as SUPER_ADMIN
+ *         content:
+ *           application/json:
+ *             example:
+ *               companyId: "660e8400-e29b-41d4-a716-446655440001"
+ *               name: "Acme Corp"
+ *               urlSlug: "acme-corp"
+ *               description: "A leading tech company"
+ *               addressLine1: "123 Tech Park"
+ *               addressLine2: null
+ *               city: "Mumbai"
+ *               state: "Maharashtra"
+ *               country: "India"
+ *               pinCode: "400001"
+ *               contactNumber: "9876543210"
+ *               hasLogo: false
+ *               createdBy: "550e8400-e29b-41d4-a716-446655440000"
+ *               createdAt: "2026-07-21T10:30:00.000Z"
+ *               updatedAt: "2026-07-21T10:30:00.000Z"
+ *               active: true
+ *               userRole:
+ *                 roleId: "770e8400-e29b-41d4-a716-446655440002"
+ *                 name: "SUPER_ADMIN"
+ *       409:
+ *         description: Company name already exists
+ */
 router.post('/', authenticate, upload.single('logo'), async (req, res, next) => {
   try {
-    const userId = req.userId;
-    const { name, aboutCompany, addressLine1, addressLine2, city, state, country, pinCode, contactNumber } = req.body;
-
-    if (!name || !addressLine1 || !city || !state || !country || !pinCode || !contactNumber) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    const existing = await prisma.company.findUnique({ where: { name } });
-    if (existing) throw new UserAlreadyExists('Company name already exists: ' + name);
-
-    let slug = generateUrlSlug(name);
-    const baseSlug = slug;
-    let counter = 1;
-    while (await prisma.company.findUnique({ where: { urlSlug: slug } })) {
-      slug = baseSlug + '-' + counter;
-      counter++;
-    }
-
-    const logoBuffer = req.file ? req.file.buffer : null;
-
-    const company = await prisma.company.create({
-      data: {
-        name,
-        urlSlug: slug,
-        description: aboutCompany || null,
-        addressLine1,
-        addressLine2: addressLine2 || null,
-        city,
-        state,
-        country,
-        pinCode,
-        contactNumber,
-        logo: logoBuffer,
-        createdBy: userId,
-      },
-    });
-
-    await prisma.companyUser.create({
-      data: { userId, companyId: company.companyId, role: 'SUPER_ADMIN' },
-    });
-
-    console.log(`Company created successfully: ${company.name} by user: ${req.user.email} with SUPER_ADMIN role`);
-    const response = await buildCompanyResponse(company.companyId, 'SUPER_ADMIN');
-    res.status(201).json(response);
+    const result = await CompanyService.create(req.userId, req.body, req.file?.buffer);
+    res.status(201).json(result);
   } catch (err) {
     next(err);
   }
 });
 
-// GET /companies
+/**
+ * @swagger
+ * /companies:
+ *   get:
+ *     tags: [Companies]
+ *     summary: List all companies for the authenticated user
+ *     description: Returns every company the user belongs to, along with their role in each.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of company memberships
+ *         content:
+ *           application/json:
+ *             example:
+ *               - companyId: "660e8400-e29b-41d4-a716-446655440001"
+ *                 name: "Acme Corp"
+ *                 urlSlug: "acme-corp"
+ *                 description: "A leading tech company"
+ *                 addressLine1: "123 Tech Park"
+ *                 city: "Mumbai"
+ *                 state: "Maharashtra"
+ *                 country: "India"
+ *                 pinCode: "400001"
+ *                 contactNumber: "9876543210"
+ *                 hasLogo: true
+ *                 createdBy: "550e8400-e29b-41d4-a716-446655440000"
+ *                 createdAt: "2026-07-21T10:30:00.000Z"
+ *                 updatedAt: "2026-07-21T10:30:00.000Z"
+ *                 active: true
+ *                 userRole:
+ *                   roleId: "770e8400-e29b-41d4-a716-446655440002"
+ *                   name: "SUPER_ADMIN"
+ */
 router.get('/', authenticate, async (req, res, next) => {
   try {
-    const memberships = await prisma.companyUser.findMany({
-      where: { userId: req.userId },
-      include: { company: true },
-    });
-
-    const results = await Promise.all(
-      memberships.map(m => buildCompanyResponse(m.companyId, m.role))
-    );
-    res.json(results);
+    const result = await CompanyService.listByUser(req.userId);
+    res.json(result);
   } catch (err) {
     next(err);
   }
 });
 
-// GET /companies/:companyId
+/**
+ * @swagger
+ * /companies/{companyId}:
+ *   get:
+ *     tags: [Companies]
+ *     summary: Get a single company by ID
+ *     description: Returns the company details if the authenticated user is a member.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: companyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: "660e8400-e29b-41d4-a716-446655440001"
+ *     responses:
+ *       200:
+ *         description: Company details
+ *         content:
+ *           application/json:
+ *             example:
+ *               companyId: "660e8400-e29b-41d4-a716-446655440001"
+ *               name: "Acme Corp"
+ *               urlSlug: "acme-corp"
+ *               description: "A leading tech company"
+ *               addressLine1: "123 Tech Park"
+ *               city: "Mumbai"
+ *               state: "Maharashtra"
+ *               country: "India"
+ *               pinCode: "400001"
+ *               contactNumber: "9876543210"
+ *               hasLogo: true
+ *               createdBy: "550e8400-e29b-41d4-a716-446655440000"
+ *               createdAt: "2026-07-21T10:30:00.000Z"
+ *               updatedAt: "2026-07-21T10:30:00.000Z"
+ *               active: true
+ *               userRole:
+ *                 roleId: "770e8400-e29b-41d4-a716-446655440002"
+ *                 name: "SUPER_ADMIN"
+ *       404:
+ *         description: User does not have access to this company
+ */
 router.get('/:companyId', authenticate, async (req, res, next) => {
   try {
-    const { companyId } = req.params;
-    const membership = await prisma.companyUser.findUnique({
-      where: { userId_companyId: { userId: req.userId, companyId } },
-    });
-    if (!membership) throw new ResourceNotFound('User does not have access to this company');
-
-    const response = await buildCompanyResponse(companyId, membership.role);
-    res.json(response);
+    const result = await CompanyService.getById(req.params.companyId, req.userId);
+    res.json(result);
   } catch (err) {
     next(err);
   }
 });
 
-// GET /companies/:companyId/logo
+/**
+ * @swagger
+ * /companies/{companyId}/logo:
+ *   get:
+ *     tags: [Companies]
+ *     summary: Download company logo
+ *     description: Returns the company logo as a PNG image. Requires the user to be a member of the company.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: companyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Logo image (PNG)
+ *         content:
+ *           image/png:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404:
+ *         description: No logo attached or user not a member
+ */
 router.get('/:companyId/logo', authenticate, async (req, res, next) => {
   try {
-    const { companyId } = req.params;
-    const membership = await prisma.companyUser.findUnique({
-      where: { userId_companyId: { userId: req.userId, companyId } },
-    });
-    if (!membership) throw new ResourceNotFound('User does not have access to this company');
-
-    const company = await prisma.company.findUnique({ where: { companyId } });
-    if (!company || !company.logo) {
+    const logoBuffer = await CompanyService.getLogo(req.params.companyId, req.userId);
+    if (!logoBuffer) {
       return res.status(404).json({ error: 'No logo attached to this company' });
     }
-
     res.set('Content-Type', 'image/png');
-    res.send(Buffer.from(company.logo));
+    res.send(Buffer.from(logoBuffer));
   } catch (err) {
     next(err);
   }
 });
 
-// PUT /companies/:companyId (multipart)
+/**
+ * @swagger
+ * /companies/{companyId}:
+ *   put:
+ *     tags: [Companies]
+ *     summary: Update a company
+ *     description: Only SUPER_ADMIN of the company can update it. Accepts an optional new logo (max 50KB).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: companyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               description:
+ *                 type: string
+ *                 example: "Updated company description"
+ *               addressLine1:
+ *                 type: string
+ *               addressLine2:
+ *                 type: string
+ *               city:
+ *                 type: string
+ *               state:
+ *                 type: string
+ *               country:
+ *                 type: string
+ *               pinCode:
+ *                 type: string
+ *               contactNumber:
+ *                 type: string
+ *               logo:
+ *                 type: string
+ *                 format: binary
+ *                 description: New logo (PNG, max 50KB). Pass to replace.
+ *     responses:
+ *       200:
+ *         description: Company updated
+ *         content:
+ *           application/json:
+ *             example:
+ *               companyId: "660e8400-e29b-41d4-a716-446655440001"
+ *               name: "Acme Corp"
+ *               urlSlug: "acme-corp"
+ *               description: "Updated company description"
+ *               addressLine1: "456 New Road"
+ *               city: "Mumbai"
+ *               state: "Maharashtra"
+ *               country: "India"
+ *               pinCode: "400001"
+ *               contactNumber: "9876543210"
+ *               hasLogo: true
+ *               active: true
+ *               userRole:
+ *                 roleId: "770e8400-e29b-41d4-a716-446655440002"
+ *                 name: "SUPER_ADMIN"
+ *       400:
+ *         description: Only SUPER_ADMIN can perform this action / logo too large
+ */
 router.put('/:companyId', authenticate, upload.single('logo'), async (req, res, next) => {
   try {
-    const { companyId } = req.params;
-    const userId = req.userId;
-
-    await requireSuperAdmin(userId, companyId);
-
-    const company = await prisma.company.findUnique({ where: { companyId } });
-    if (!company) throw new ResourceNotFound('Company not found');
-
-    const { description, addressLine1, addressLine2, city, state, country, pinCode, contactNumber } = req.body;
-
-    const updateData = {};
-    if (description !== undefined) updateData.description = description;
-    if (addressLine1 !== undefined) updateData.addressLine1 = addressLine1;
-    if (addressLine2 !== undefined) updateData.addressLine2 = addressLine2;
-    if (city !== undefined) updateData.city = city;
-    if (state !== undefined) updateData.state = state;
-    if (country !== undefined) updateData.country = country;
-    if (pinCode !== undefined) updateData.pinCode = pinCode;
-    if (contactNumber !== undefined) updateData.contactNumber = contactNumber;
-    if (req.file) {
-      if (req.file.size > MAX_FILE_SIZE) {
-        throw new BadRequest('Logo size must not exceed 50KB');
-      }
-      updateData.logo = req.file.buffer;
-    }
-
-    await prisma.company.update({ where: { companyId }, data: updateData });
-    console.log(`Company updated: ${company.name} by user: ${req.user.email}`);
-
-    const membership = await prisma.companyUser.findUnique({
-      where: { userId_companyId: { userId, companyId } },
-    });
-    const response = await buildCompanyResponse(companyId, membership.role);
-    res.json(response);
+    const result = await CompanyService.update(req.params.companyId, req.userId, req.body, req.file?.buffer);
+    res.json(result);
   } catch (err) {
     next(err);
   }
 });
 
-// POST /companies/:companyId/users
+/**
+ * @swagger
+ * /companies/{companyId}/users:
+ *   post:
+ *     tags: [Companies]
+ *     summary: Add a user to a company
+ *     description: |
+ *       Only SUPER_ADMIN can add users. If the email does not match an existing user, a new user account is created and a verification email is sent.
+ *       The user must provide `username` and `password` when creating a new user.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: companyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           example:
+ *             email: jane@example.com
+ *             roleId: "880e8400-e29b-41d4-a716-446655440003"
+ *             firstName: Jane
+ *             lastName: Smith
+ *             username: janesmith
+ *             password: Secret789!
+ *           schema:
+ *             type: object
+ *             required: [email, roleId]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               roleId:
+ *                 type: string
+ *                 description: ID of the role to assign
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               username:
+ *                 type: string
+ *                 description: Required if user does not already exist
+ *               password:
+ *                 type: string
+ *                 minLength: 8
+ *                 description: Required if user does not already exist
+ *     responses:
+ *       201:
+ *         description: User added to company (or new user created + added)
+ *         content:
+ *           application/json:
+ *             example:
+ *               userId: "990e8400-e29b-41d4-a716-446655440004"
+ *               email: jane@example.com
+ *               firstName: Jane
+ *               lastName: Smith
+ *               roleId: "880e8400-e29b-41d4-a716-446655440003"
+ *               active: true
+ *               createdAt: "2026-07-21T10:30:00.000Z"
+ *               message: "New user created and added to company. Verification email sent."
+ *       400:
+ *         description: User is already a member / role does not belong to this company
+ *       409:
+ *         description: Email or username already exists
+ */
 router.post('/:companyId/users', authenticate, async (req, res, next) => {
   try {
-    const { companyId } = req.params;
-    const superAdminUserId = req.userId;
-    const { email, firstName, lastName, username, password, role } = req.body;
-
-    if (!email || !role) {
-      return res.status(400).json({ error: 'Email and role are required' });
-    }
-
-    const company = await prisma.company.findUnique({ where: { companyId } });
-    if (!company) throw new ResourceNotFound('Company not found');
-
-    const superAdminMembership = await prisma.companyUser.findUnique({
-      where: { userId_companyId: { userId: superAdminUserId, companyId } },
-    });
-    if (!superAdminMembership) throw new ResourceNotFound('You are not a member of this company');
-    if (superAdminMembership.role !== 'SUPER_ADMIN') {
-      throw new BadRequest('Only SUPER_ADMIN can add users to the company');
-    }
-
-    let user = await prisma.user.findUnique({ where: { email } });
-    let isNewUser = false;
-
-    if (!user) {
-      if (!username) throw new BadRequest('Username is required for new users');
-      if (!password) throw new BadRequest('Password is required for new users');
-
-      const existingEmail = await prisma.user.findUnique({ where: { email } });
-      if (existingEmail) throw new UserAlreadyExists('Email already exists: ' + email);
-      const existingUsername = await prisma.user.findUnique({ where: { username } });
-      if (existingUsername) throw new UserAlreadyExists('Username already exists: ' + username);
-
-      const passwordHash = await bcrypt.hash(password, 12);
-      user = await prisma.user.create({
-        data: {
-          username,
-          email,
-          passwordHash,
-          firstName: firstName || null,
-          lastName: lastName || null,
-          status: 'INACTIVE',
-          emailVerified: false,
-        },
-      });
-      isNewUser = true;
-      console.log('New user created via company invite:', user.email);
-
-      const tokenString = crypto.randomUUID();
-      await prisma.verificationToken.create({
-        data: {
-          userId: user.userId,
-          token: tokenString,
-          tokenType: 'EMAIL_VERIFICATION',
-          status: 'ACTIVE',
-          expiryAt: new Date(Date.now() + VERIFICATION_EXPIRATION),
-        },
-      });
-      const { sendVerificationEmail } = require('../utils/email');
-      sendVerificationEmail(user.email, tokenString, req);
-    }
-
-    const alreadyMember = await prisma.companyUser.findUnique({
-      where: { userId_companyId: { userId: user.userId, companyId } },
-    });
-    if (alreadyMember) throw new UserAlreadyExists('User is already a member of this company');
-
-    const companyUser = await prisma.companyUser.create({
-      data: { userId: user.userId, companyId, role, active: true },
-    });
-
-    const message = isNewUser
-      ? 'New user created and added to company. Verification email sent.'
-      : 'User added to company';
-
-    console.log(`User ${user.email} added to company ${company.name} with role ${role}`);
-
-    res.status(201).json({
-      userId: user.userId,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role,
-      active: true,
-      createdAt: companyUser.createdAt,
-      message,
-    });
+    const result = await CompanyService.addUser(req.params.companyId, req.userId, req.body);
+    res.status(201).json(result);
   } catch (err) {
     next(err);
   }

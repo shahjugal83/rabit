@@ -1,6 +1,7 @@
 var RabbitActions = (function() {
     var ENTITY_CONFIG = {
         users: {
+            resource: 'users',
             editUrl: function(row) {
                 return 'user-role-edit.html?userId=' + row.id + '&companyId=' + row.companyId;
             },
@@ -9,6 +10,7 @@ var RabbitActions = (function() {
             showDelete: false
         },
         roles: {
+            resource: 'roles',
             editUrl: function(row) {
                 return 'role-edit.html?roleId=' + row.id;
             },
@@ -18,6 +20,7 @@ var RabbitActions = (function() {
             deleteConfirm: 'Are you sure you want to delete this role?'
         },
         companies: {
+            resource: 'companies',
             editUrl: function(row) {
                 return 'company-edit.html?companyId=' + row.id;
             },
@@ -26,6 +29,7 @@ var RabbitActions = (function() {
             showDelete: false
         },
         documents: {
+            resource: 'documents',
             editUrl: null,
             editLabel: 'Edit',
             showEdit: false,
@@ -33,6 +37,7 @@ var RabbitActions = (function() {
             deleteConfirm: 'Are you sure you want to delete this document type?'
         },
         materials: {
+            resource: 'materials',
             editUrl: function(row) {
                 return 'material-edit.html?materialId=' + row.id;
             },
@@ -42,6 +47,7 @@ var RabbitActions = (function() {
             deleteConfirm: 'Are you sure you want to delete this material?'
         },
         invoices: {
+            resource: 'invoices',
             editUrl: null,
             editLabel: 'Edit',
             showEdit: false,
@@ -57,12 +63,20 @@ var RabbitActions = (function() {
         var html = '';
         var opts = options || {};
 
-        if (config.showEdit && config.editUrl) {
+        var canEdit = opts.canEdit !== undefined ? opts.canEdit : true;
+        var canDelete = opts.canDelete !== undefined ? opts.canDelete : true;
+
+        if (config.resource) {
+            if (canEdit && !hasPermission(config.resource, 'update')) canEdit = false;
+            if (canDelete && !hasPermission(config.resource, 'delete')) canDelete = false;
+        }
+
+        if (config.showEdit && config.editUrl && canEdit) {
             var url = typeof config.editUrl === 'function' ? config.editUrl(row) : config.editUrl;
             html += '<a href="' + url + '" class="btn-secondary btn-sm">' + config.editLabel + '</a> ';
         }
 
-        if (config.showDelete) {
+        if (config.showDelete && canDelete) {
             var deleteFn = opts.deleteFunction || ('handleDelete(\'' + row.id + '\')');
             var confirmMsg = config.deleteConfirm || 'Are you sure?';
             html += '<button class="btn-secondary btn-sm" style="color:#dc2626;" onclick="if(confirm(\'' + confirmMsg + '\'))' + deleteFn + '">' + (opts.deleteLabel || 'Delete') + '</button>';

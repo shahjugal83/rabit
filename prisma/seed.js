@@ -1,10 +1,10 @@
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
 const { PrismaClient } = require('@prisma/client');
-const { PrismaNeonHTTP } = require('@prisma/adapter-neon');
+const { PrismaNeonHttp } = require('@prisma/adapter-neon');
 const bcrypt = require('bcryptjs');
 
-const adapter = new PrismaNeonHTTP({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaNeonHttp({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 function uuid(val) {

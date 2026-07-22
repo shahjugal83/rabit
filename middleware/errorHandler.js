@@ -12,6 +12,7 @@ function errorHandler(err, req, res, _next) {
     path: req.originalUrl,
   };
 
+  res.locals.errorBody = body;
   res.status(statusCode).json(body);
 }
 

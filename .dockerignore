@@ -1,7 +1,6 @@
-.git
-.idea
-target/
-*.iml
-.vscode
-.gradle
-build/
+node_modules/
+.git/
+.idea/
+.vercel/
+.env
+*.log

@@ -1,3 +1,8 @@
+DROP TABLE IF EXISTS invoices CASCADE;
+DROP TABLE IF EXISTS material_identifiers CASCADE;
+DROP TABLE IF EXISTS material_companies CASCADE;
+DROP TABLE IF EXISTS materials CASCADE;
+DROP TABLE IF EXISTS feature_mgt CASCADE;
 DROP TABLE IF EXISTS role_permissions CASCADE;
 DROP TABLE IF EXISTS company_users CASCADE;
 DROP TABLE IF EXISTS document_types CASCADE;
@@ -105,9 +110,61 @@ CREATE TABLE IF NOT EXISTS document_types (
     document_type_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     company_id UUID NOT NULL REFERENCES companies(company_id),
     name VARCHAR(255) NOT NULL,
+    document_number VARCHAR(255),
     created_by UUID REFERENCES users(user_id),
     updated_by UUID REFERENCES users(user_id),
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
     UNIQUE(company_id, name)
+);
+
+CREATE TABLE IF NOT EXISTS feature_mgt (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id UUID UNIQUE NOT NULL REFERENCES companies(company_id),
+    user_feature BOOLEAN DEFAULT FALSE,
+    is_invoice_management BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS materials (
+    material_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    material_name VARCHAR(255) UNIQUE NOT NULL,
+    created_by UUID REFERENCES users(user_id),
+    updated_by UUID REFERENCES users(user_id),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS material_companies (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    material_id UUID NOT NULL REFERENCES materials(material_id) ON DELETE CASCADE,
+    company_id UUID NOT NULL REFERENCES companies(company_id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(material_id, company_id)
+);
+
+CREATE TABLE IF NOT EXISTS material_identifiers (
+    identifier_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    material_id UUID NOT NULL REFERENCES materials(material_id) ON DELETE CASCADE,
+    identifier_name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(material_id, identifier_name)
+);
+
+CREATE TABLE IF NOT EXISTS invoices (
+    invoice_id SERIAL PRIMARY KEY,
+    document_number VARCHAR(255) NOT NULL,
+    document_name VARCHAR(255) NOT NULL,
+    company_name VARCHAR(255) NOT NULL,
+    created_by UUID REFERENCES users(user_id),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS invoice_items (
+    item_id SERIAL PRIMARY KEY,
+    invoice_id INT NOT NULL REFERENCES invoices(invoice_id) ON DELETE CASCADE,
+    material_name VARCHAR(255) NOT NULL,
+    identifier_name VARCHAR(255) NOT NULL
 );

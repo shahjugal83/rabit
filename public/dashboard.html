@@ -20,104 +20,100 @@
 </head>
 <body class="bg-gray-50">
     <div class="layout">
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-brand">Rabbit</div>
-            <nav class="sidebar-nav">
-                <a href="dashboard.html" class="sidebar-link active">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z"/></svg>
-                    Dashboard
-                </a>
-                <a href="companies.html" class="sidebar-link" id="nav-companies" style="display:none;">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                    Companies
-                </a>
-                <a href="roles.html" class="sidebar-link" id="nav-roles" style="display:none;">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                    Roles
-                </a>
-                <a href="users.html" class="sidebar-link" id="nav-users" style="display:none;">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    Users
-                </a>
-            </nav>
-            <div class="sidebar-footer">
-                <a href="logout.html" class="text-red-400 hover:text-red-300 text-sm">Logout</a>
-            </div>
-        </aside>
+        <div id="sidebar-container"></div>
 
         <div class="main-content">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-xl font-bold text-gray-900" id="welcome-msg">Dashboard</h2>
                 <div class="flex items-center gap-3">
                     <span id="user-name" class="text-sm text-gray-600"></span>
-                    <span id="user-initials" class="w-8 h-8 rounded-full bg-blue-600 text-white text-xs font-medium flex items-center justify-center"></span>
+                    <span id="user-initials" class="w-8 h-8 rounded-full text-white text-xs font-medium flex items-center justify-center" style="background-color:var(--carrot);"></span>
                 </div>
             </div>
 
             <div id="loading" class="text-center py-12">
-                <div class="spinner mx-auto mb-4" style="width:2rem;height:2rem;border-width:3px;border-color:#2563eb;border-right-color:transparent;"></div>
+                <div class="spinner mx-auto mb-4" style="width:2rem;height:2rem;border-width:3px;border-color:var(--carrot);border-right-color:transparent;"></div>
                 <p class="text-gray-500">Loading dashboard...</p>
             </div>
 
             <div id="dashboard" class="hidden">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                    <div class="bg-white rounded-lg shadow-sm p-5">
-                        <p class="text-xs text-gray-500 mb-1">Status</p>
-                        <p id="user-status" class="text-lg font-semibold"></p>
+                <div id="stats-cards" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="detail-card">
+                        <div class="detail-card-body">
+                            <p class="info-box-label">Status</p>
+                            <p id="user-status" class="info-box-value"></p>
+                        </div>
                     </div>
-                    <div class="bg-white rounded-lg shadow-sm p-5">
-                        <p class="text-xs text-gray-500 mb-1">Location</p>
-                        <p id="user-location" class="text-lg font-semibold"></p>
+                    <div class="detail-card">
+                        <div class="detail-card-body">
+                            <p class="info-box-label">Location</p>
+                            <p id="user-location" class="info-box-value"></p>
+                        </div>
                     </div>
-                    <div class="bg-white rounded-lg shadow-sm p-5">
-                        <p class="text-xs text-gray-500 mb-1">Companies</p>
-                        <p id="company-count" class="text-lg font-semibold"></p>
+                    <div class="detail-card">
+                        <div class="detail-card-body">
+                            <p class="info-box-label">Companies</p>
+                            <p id="company-count" class="info-box-value text-2xl font-bold" style="color:var(--carrot);"></p>
+                        </div>
+                    </div>
+                    <div id="admin-stats-card" class="hidden detail-card">
+                        <div class="detail-card-body">
+                            <p class="info-box-label">Total Users</p>
+                            <p id="total-users" class="info-box-value text-2xl font-bold" style="color:var(--soft-blue);"></p>
+                        </div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow-sm p-5">
-                    <h3 class="text-base font-semibold text-gray-900 mb-4">Your Companies</h3>
-                    <div id="companies-list" class="space-y-3"></div>
-                    <p id="no-companies" class="hidden text-gray-400 text-sm">No companies yet.</p>
+                <div id="admin-doc-stats" class="hidden mb-6">
+                    <div class="detail-card">
+                        <div class="detail-card-body">
+                            <p class="info-box-label">Total Document Types</p>
+                            <p id="total-doc-types" class="info-box-value text-2xl font-bold" style="color:var(--mint);"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-card">
+                    <div class="detail-card-header">
+                        <h3>Your Companies</h3>
+                    </div>
+                    <div class="detail-card-body">
+                        <div id="companies-list" class="space-y-3"></div>
+                        <p id="no-companies" class="hidden text-gray-400 text-sm">No companies yet.</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script src="js/api.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script src="js/rabbit-table.js"></script>
+    <script src="js/rabbit-search.js"></script>
+    <script src="js/rabbit-card.js"></script>
     <script>
-        if (!isLoggedIn()) { window.location.href = 'login.html'; }
-
         (async function() {
-            const result = await apiCall('GET', '/auth/me');
-            document.getElementById('loading').classList.add('hidden');
+            renderSidebar('dashboard');
+            const user = await requireAuth();
+            if (!user) return;
 
-            if (!result || result.status !== 200) {
-                if (result && result.status === 0) {
-                    document.getElementById('loading').innerHTML = '<p class="text-red-500">Unable to connect to server.</p>';
-                    document.getElementById('loading').classList.remove('hidden');
-                } else {
-                    window.location.href = 'login.html';
-                }
-                return;
-            }
+            const isSuperAdmin = (user.companies || []).some(c => c.role && c.role.name === 'SUPER_ADMIN');
 
-            const user = result.data;
-            document.getElementById('dashboard').classList.remove('hidden');
-
-            const isSuperAdmin = (user.companies || []).some(c => c.role === 'SUPER_ADMIN');
-            if (isSuperAdmin) {
-                document.getElementById('nav-companies').style.display = 'flex';
+            let features = {};
+            if (isSuperAdmin && user.companies) {
+                user.companies.forEach(c => {
+                    if (c.features && c.features.userFeature) features.userFeature = true;
+                    if (c.features && c.features.invoiceManagement) features.invoiceManagement = true;
+                });
             }
 
             document.getElementById('user-name').textContent = user.firstName
                 ? user.firstName + ' ' + (user.lastName || '')
                 : user.username;
 
-            const initialsEl = document.getElementById('user-initials');
             const first = (user.firstName || user.username || '').charAt(0).toUpperCase();
             const last = (user.lastName || '').charAt(0).toUpperCase();
-            initialsEl.textContent = first + last;
+            document.getElementById('user-initials').textContent = first + last;
 
             document.getElementById('welcome-msg').textContent = 'Welcome, ' + (user.firstName || user.username) + '!';
             document.getElementById('user-status').textContent = user.status;
@@ -125,8 +121,24 @@
             const location = [user.city, user.state, user.country].filter(Boolean).join(', ');
             document.getElementById('user-location').textContent = location || 'Not set';
 
-            const companies = user.companies || [];
+            const dashResult = await apiCall('GET', '/auth/dashboard');
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+
+            if (isSuperAdmin) {
+                showAdminNavLinks(features);
+                document.getElementById('stats-cards').classList.remove('hidden');
+                document.getElementById('admin-stats-card').classList.remove('hidden');
+                document.getElementById('admin-doc-stats').classList.remove('hidden');
+            }
+
+            const companies = (dashResult && dashResult.status === 200) ? (dashResult.data.companies || []) : [];
             document.getElementById('company-count').textContent = companies.length;
+
+            if (isSuperAdmin && dashResult.data && dashResult.data.stats) {
+                document.getElementById('total-users').textContent = dashResult.data.stats.users || 0;
+                document.getElementById('total-doc-types').textContent = dashResult.data.stats.docTypes || 0;
+            }
 
             if (companies.length === 0) {
                 document.getElementById('no-companies').classList.remove('hidden');
@@ -134,8 +146,19 @@
                 const listEl = document.getElementById('companies-list');
                 companies.forEach(c => {
                     const div = document.createElement('div');
-                    div.className = 'flex items-center justify-between p-4 bg-gray-50 rounded-lg';
-                    div.innerHTML = '<div><p class="font-medium text-gray-900">' + c.name + '</p><p class="text-sm text-gray-500">' + (c.role || '') + '</p></div>';
+                    div.className = 'info-box';
+                    const members = c.memberCount !== undefined ? c.memberCount : '';
+                    const docs = c.docTypeCount !== undefined ? c.docTypeCount : '';
+                    const statsLine = isSuperAdmin
+                        ? '<span class="text-xs text-gray-400 ml-2">(' + members + ' users, ' + docs + ' doc types)</span>'
+                        : '';
+                    div.innerHTML =
+                        '<div class="flex items-center justify-between">' +
+                            '<div>' +
+                                '<p class="info-box-value">' + c.name + statsLine + '</p>' +
+                                '<p class="text-sm text-gray-500">' + (c.userRole ? c.userRole.name : '') + '</p>' +
+                            '</div>' +
+                        '</div>';
                     listEl.appendChild(div);
                 });
             }

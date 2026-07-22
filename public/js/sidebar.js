@@ -115,3 +115,36 @@ function showAdminNavLinks(features) {
     }
   });
 }
+
+function renderMobileCards(config) {
+  const { containerId, columns, actions, rows } = config;
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+
+  rows.forEach(row => {
+    const card = document.createElement('div');
+    card.className = 'card-item';
+    if (row.searchText) card.setAttribute('data-search', row.searchText);
+
+    let html = '';
+    columns.forEach(col => {
+      html += '<div class="card-item-row">' +
+        '<span class="card-item-label">' + col.label + '</span>' +
+        '<span class="card-item-value">' + (row.data[col.key] || '-') + '</span>' +
+        '</div>';
+    });
+
+    if (actions && actions.length > 0) {
+      html += '<div class="card-item-actions">';
+      actions.forEach(action => {
+        if (action.show && !action.show(row.raw)) return;
+        html += '<button class="' + (action.btnClass || 'btn-secondary btn-sm') + '" onclick="' + action.onclick(row.raw) + '">' + action.label + '</button>';
+      });
+      html += '</div>';
+    }
+
+    card.innerHTML = html;
+    container.appendChild(card);
+  });
+}

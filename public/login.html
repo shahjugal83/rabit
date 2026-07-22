@@ -32,23 +32,23 @@
 
             <form id="loginForm" onsubmit="handleLogin(event)">
                 <div class="mb-4">
-                    <label for="identifier" class="block text-sm font-medium text-gray-700 mb-1">Email or Username</label>
+                    <label for="identifier" class="label">Email or Username</label>
                     <input type="text" id="identifier" name="identifier" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                           class="form-input"
                            placeholder="john@example.com">
                     <p id="identifier-error" class="hidden text-red-600 text-sm mt-1"></p>
                 </div>
 
                 <div class="mb-6">
-                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <label for="password" class="label">Password</label>
                     <input type="password" id="password" name="password" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                           class="form-input"
                            placeholder="Enter your password">
                     <p id="password-error" class="hidden text-red-600 text-sm mt-1"></p>
                 </div>
 
                 <button type="submit" id="loginBtn"
-                        class="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition font-medium">
+                        class="btn-primary w-full">
                     Login
                 </button>
             </form>
@@ -89,6 +89,10 @@
 
             if (result.status === 200 && result.data) {
                 setToken(result.data.token, result.data.userId);
+                const meResult = await apiCall('GET', '/auth/me');
+                if (meResult && meResult.status === 200 && meResult.data) {
+                    setUserData(meResult.data);
+                }
                 window.location.href = 'dashboard.html';
             } else if (result.status === 0) {
                 showGlobalError('Unable to connect to server. Please try again later.');

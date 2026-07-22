@@ -1,7 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
-const { PrismaNeonHTTP } = require('@prisma/adapter-neon');
+const { PrismaNeonHttp } = require('@prisma/adapter-neon');
 
-const adapter = new PrismaNeonHTTP({
+const adapter = new PrismaNeonHttp({
   connectionString: process.env.DATABASE_URL,
 });
 

@@ -1,14 +1,17 @@
+const FRIENDLY_500 = 'An unexpected error occurred. Please try again or contact your administrator.';
+
 function errorHandler(err, req, res, _next) {
   console.error(err);
 
   const statusCode = err.statusCode || 500;
+  const isServerError = statusCode >= 500;
 
   const body = {
     timestamp: new Date().toISOString(),
     requestId: req.requestId || null,
     status: statusCode,
     error: err.errorLabel || 'Internal Server Error',
-    message: err.message || 'Internal server error',
+    message: isServerError ? FRIENDLY_500 : (err.message || 'Internal server error'),
     path: req.originalUrl,
   };
 

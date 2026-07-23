@@ -44,15 +44,22 @@ app.use(express.static('public'));
 
 app.use(express.json({ limit: '1mb' }));
 
-const allowedOrigins = process.env.CORS_ORIGINS
+const configuredOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
   : ['http://localhost:3001', 'http://localhost:3000'];
+
+if (process.env.VERCEL_URL) {
+  configuredOrigins.push(`https://${process.env.VERCEL_URL}`);
+}
+if (process.env.VERCEL_BRANCH_URL) {
+  configuredOrigins.push(`https://${process.env.VERCEL_BRANCH_URL}`);
+}
 
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
     if (process.env.NODE_ENV !== 'production') return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (configuredOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));

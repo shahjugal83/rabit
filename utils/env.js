@@ -11,7 +11,8 @@ log.config('JWT_SECRET', process.env.JWT_SECRET ? `${process.env.JWT_SECRET.slic
 log.config('CORS_ORIGINS', process.env.CORS_ORIGINS || 'http://localhost:3001, http://localhost:3000');
 log.config('JWT_EXPIRATION', process.env.JWT_EXPIRATION ? `${Number(process.env.JWT_EXPIRATION) / 1000 / 60}m` : '86400000 (24h)');
 log.config('VERIFICATION_EXPIRATION', process.env.VERIFICATION_EXPIRATION ? `${Number(process.env.VERIFICATION_EXPIRATION) / 1000 / 60}m` : '3600000 (1h)');
-log.config('SMTP_HOST', process.env.SMTP_HOST || '(not set)');
+log.config('RESEND_API_KEY', process.env.RESEND_API_KEY ? `${process.env.RESEND_API_KEY.slice(0, 6)}...` : '❌ NOT SET');
+log.config('FROM_EMAIL', process.env.FROM_EMAIL || '❌ NOT SET');
 
 if (missing.length > 0) {
   if (process.env.VERCEL) {

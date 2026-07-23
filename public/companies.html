@@ -76,6 +76,11 @@
             });
 
             showAdminNavLinks(features);
+
+            if (!hasPermission('companies', 'create')) {
+                document.querySelector('.page-header .btn-primary').classList.add('hidden');
+            }
+
             document.getElementById('loading').classList.add('hidden');
             await loadCompanies();
         })();

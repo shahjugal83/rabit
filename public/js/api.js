@@ -135,6 +135,7 @@ function hasFeature(featureKey) {
 
 function hasPermission(resource, action) {
     try {
+        if (isSuperAdmin()) return true;
         var user = getUserData();
         var companies = user.companies || [];
         return companies.some(function(c) {

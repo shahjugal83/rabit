@@ -110,9 +110,10 @@
                 var savedFilter = localStorage.getItem('documents_filter');
                 if (savedFilter && companiesData.some(function(c) { return c.companyId === savedFilter; })) {
                     select.value = savedFilter;
-                    document.getElementById('loading').classList.remove('hidden');
-                    loadDocumentTypes();
                 }
+
+                document.getElementById('loading').classList.remove('hidden');
+                loadDocumentTypes();
             }
 
             if (companiesData.length === 0) {

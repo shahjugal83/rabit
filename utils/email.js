@@ -1,17 +1,8 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT, 10),
-  secure: false,
-  requireTLS: true,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-const fromEmail = process.env.FROM_EMAIL;
+const fromEmail = process.env.FROM_EMAIL || 'onboarding@resend.dev';
 
 function getFrontendBaseUrl(req) {
   if (req) {
@@ -26,14 +17,15 @@ async function sendVerificationEmail(email, token, req) {
   try {
     const frontendBaseUrl = getFrontendBaseUrl(req);
     const link = `${frontendBaseUrl}/verify.html?token=${token}`;
-    await transporter.sendMail({
+    await resend.emails.send({
       from: fromEmail,
       to: email,
       subject: 'Email Verification - SaaS Application',
-      text:
-        `Click the link below to verify your email:\n\n${link}\n\n` +
-        `This link will expire in 1 hour.\n\n` +
-        `If you didn't register, please ignore this email.`,
+      html:
+        `<p>Click the link below to verify your email:</p>` +
+        `<p><a href="${link}">${link}</a></p>` +
+        `<p>This link will expire in 1 hour.</p>` +
+        `<p>If you didn't register, please ignore this email.</p>`,
     });
     console.log(`Verification email sent to: ${email}`);
   } catch (err) {
@@ -45,14 +37,15 @@ async function sendPasswordResetEmail(email, token, req) {
   try {
     const frontendBaseUrl = getFrontendBaseUrl(req);
     const link = `${frontendBaseUrl}/reset-password.html?token=${token}`;
-    await transporter.sendMail({
+    await resend.emails.send({
       from: fromEmail,
       to: email,
       subject: 'Password Reset - SaaS Application',
-      text:
-        `Click the link below to reset your password:\n\n${link}\n\n` +
-        `This link will expire in 1 hour.\n\n` +
-        `If you didn't request this, please ignore this email.`,
+      html:
+        `<p>Click the link below to reset your password:</p>` +
+        `<p><a href="${link}">${link}</a></p>` +
+        `<p>This link will expire in 1 hour.</p>` +
+        `<p>If you didn't request this, please ignore this email.</p>`,
     });
     console.log(`Password reset email sent to: ${email}`);
   } catch (err) {

@@ -103,12 +103,10 @@
             const isSuperAdmin = (user.companies || []).some(c => c.role && c.role.name === 'SUPER_ADMIN');
 
             let features = {};
-            if (isSuperAdmin && user.companies) {
-                user.companies.forEach(c => {
-                    if (c.features && c.features.userFeature) features.userFeature = true;
-                    if (c.features && c.features.invoiceManagement) features.invoiceManagement = true;
-                });
-            }
+            (user.companies || []).forEach(c => {
+                if (c.features && c.features.userFeature) features.userFeature = true;
+                if (c.features && c.features.invoiceManagement) features.invoiceManagement = true;
+            });
 
             document.getElementById('user-name').textContent = user.firstName
                 ? user.firstName + ' ' + (user.lastName || '')
@@ -128,8 +126,9 @@
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('dashboard').classList.remove('hidden');
 
+            showAdminNavLinks(features);
+
             if (isSuperAdmin) {
-                showAdminNavLinks(features);
                 document.getElementById('stats-cards').classList.remove('hidden');
                 document.getElementById('admin-stats-card').classList.remove('hidden');
                 document.getElementById('admin-doc-stats').classList.remove('hidden');

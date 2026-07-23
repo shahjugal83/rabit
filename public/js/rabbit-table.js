@@ -33,7 +33,9 @@ var RabbitTable = (function() {
         var actions = config.actions || null;
         var onRefresh = config.onRefresh || null;
 
-        st.selected = config.selected || [];
+        if (!container._config) {
+            st.selected = config.selected || [];
+        }
         st.filteredData = data.slice();
 
         var borderClass = BORDER_CLASSES[type] || 'rabbit-table-silver';

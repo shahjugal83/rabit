@@ -58,7 +58,12 @@ class AuthService {
       },
     });
 
-    sendVerificationEmail(user.email, tokenString, req);
+    try {
+      await sendVerificationEmail(user.email, tokenString, req);
+    } catch (emailErr) {
+      console.error('Registration failed: could not send verification email', emailErr);
+      throw new BadRequest('Failed to send verification email. Please try again.');
+    }
 
     const response = new UserResponse(user);
     response.message = 'Verification email sent. Please verify your email.';
@@ -160,7 +165,12 @@ class AuthService {
       },
     });
 
-    sendVerificationEmail(user.email, tokenString, req);
+    try {
+      await sendVerificationEmail(user.email, tokenString, req);
+    } catch (emailErr) {
+      console.error('Resend verification failed: could not send email', emailErr);
+      throw new BadRequest('Failed to send verification email. Please try again.');
+    }
     return new MessageResponse('Verification email sent');
   }
 
@@ -180,7 +190,12 @@ class AuthService {
         },
       });
 
-      sendPasswordResetEmail(user.email, resetToken, req);
+      try {
+        await sendPasswordResetEmail(user.email, resetToken, req);
+      } catch (emailErr) {
+        console.error('Password reset failed: could not send email', emailErr);
+        throw new BadRequest('Failed to send password reset email. Please try again.');
+      }
     }
 
     return new MessageResponse('If an account exists with that email, a password reset link has been sent.');

@@ -88,7 +88,12 @@ class UserService {
           expiryAt: new Date(Date.now() + VERIFICATION_EXPIRATION),
         },
       });
-      sendVerificationEmail(user.email, tokenString, null);
+      try {
+        await sendVerificationEmail(user.email, tokenString, null);
+      } catch (emailErr) {
+        console.error('AddUserToCompany failed: could not send verification email', emailErr);
+        throw new BadRequest('Failed to send verification email. Please try again.');
+      }
     }
 
     const alreadyMember = await prisma.companyUser.findUnique({

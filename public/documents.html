@@ -161,7 +161,7 @@
                 setCompanyId(null);
 
                 if (result && result.status === 200) {
-                    var docs = (result.data || []).map(function(d) { return Object.assign({}, d, { companyName: company.name }); });
+                    var docs = (result.data || []).map(function(d) { return Object.assign({}, d, { companyName: company.name, companyId: company.companyId }); });
                     allDocTypes = allDocTypes.concat(docs);
                 }
             }
@@ -230,6 +230,7 @@
                         name: d.name,
                         documentNumber: d.documentNumber,
                         companyName: d.companyName,
+                        companyId: d.companyId,
                         createdBy: d.creator ? d.creator.username : '-',
                         createdAt: d.createdAt
                     };
@@ -237,16 +238,15 @@
                 selected: [],
                 onRefresh: function() { loadDocumentTypes(); },
                 actions: function(row) {
-                    return RabbitActions.renderActions('documents', row, { deleteFunction: 'handleDelete(\'' + row.id + '\')' });
+                    return RabbitActions.renderActions('documents', row, { deleteFunction: 'handleDelete(\'' + row.id + '\',\'' + row.companyId + '\')' });
                 },
                 searchFields: ['name', 'documentNumber', 'companyName']
             });
         }
 
-        async function handleDelete(documentTypeId) {
+        async function handleDelete(documentTypeId, companyId) {
             if (!confirm('Are you sure you want to delete this document type?')) return;
 
-            var companyId = document.getElementById('filter-company').value;
             setCompanyId(companyId);
             var result = await apiCall('DELETE', '/companies/' + companyId + '/document-types/' + documentTypeId);
             setCompanyId(null);

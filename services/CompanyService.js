@@ -72,6 +72,10 @@ class CompanyService {
       data: { userId, companyId: company.companyId, roleId: superAdminRole.roleId },
     });
 
+    await prisma.featureMgt.create({
+      data: { companyId: company.companyId, userFeature: true, isInvoiceManagement: true },
+    });
+
     return new CompanyResponse(company, superAdminRole);
   }
 

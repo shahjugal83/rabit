@@ -97,7 +97,7 @@
             const user = await requireAuth();
             if (!user) return;
             const isSuperAdmin = (user.companies || []).some(c => c.role && c.role.name === 'SUPER_ADMIN');
-            if (!isSuperAdmin) { window.location.href = 'dashboard.html'; return; }
+            if (!isSuperAdmin && (user.companies || []).length > 0) { window.location.href = 'dashboard.html'; return; }
             let features = {};
             (user.companies || []).forEach(c => {
                 if (c.features && c.features.userFeature) features.userFeature = true;

@@ -158,7 +158,7 @@ const swaggerOptions = {
           properties: {
             permissionId: { type: 'string' },
             resource: { type: 'string', enum: ['companies', 'users', 'roles', 'documents', 'materials', 'invoices'] },
-            action: { type: 'string', enum: ['read', 'write'] },
+            action: { type: 'string', enum: ['read', 'create', 'update', 'delete'] },
             description: { type: 'string', nullable: true },
             createdAt: { type: 'string', format: 'date-time' },
           },

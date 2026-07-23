@@ -12,6 +12,14 @@
     {
       "source": "/health",
       "destination": "/api"
+    },
+    {
+      "source": "/swagger-ui.html",
+      "destination": "/api"
+    },
+    {
+      "source": "/v3/api-docs/(.*)",
+      "destination": "/api"
     }
   ]
 }

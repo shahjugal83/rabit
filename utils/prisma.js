@@ -1,10 +1,15 @@
 const { PrismaClient } = require('@prisma/client');
 const { PrismaNeonHttp } = require('@prisma/adapter-neon');
 
-const adapter = new PrismaNeonHttp({
-  connectionString: process.env.DATABASE_URL,
-});
+const connectionString = process.env.DATABASE_URL;
 
-const prisma = new PrismaClient({ adapter });
+let prisma;
+
+if (connectionString) {
+  const adapter = new PrismaNeonHttp({ connectionString });
+  prisma = new PrismaClient({ adapter });
+} else {
+  prisma = new PrismaClient();
+}
 
 module.exports = prisma;

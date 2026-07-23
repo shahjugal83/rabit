@@ -4,7 +4,7 @@ const { PrismaClient } = require('@prisma/client');
 const { PrismaNeonHttp } = require('@prisma/adapter-neon');
 const bcrypt = require('bcryptjs');
 
-const adapter = new PrismaNeonHttp({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaNeonHttp(process.env.DATABASE_URL);
 const prisma = new PrismaClient({ adapter });
 
 function uuid(val) {

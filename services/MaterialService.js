@@ -28,6 +28,18 @@ class MaterialService {
     return materials.map(m => new MaterialResponse(m));
   }
 
+  async listByUserCompanies(companyIds) {
+    const materials = await prisma.material.findMany({
+      where: { companies: { some: { companyId: { in: companyIds } } } },
+      include: {
+        companies: { include: { company: { select: { companyId: true, name: true } } } },
+        identifiers: true,
+      },
+      orderBy: { materialName: 'asc' },
+    });
+    return materials.map(m => new MaterialResponse(m));
+  }
+
   async getById(materialId) {
     const material = await prisma.material.findUnique({
       where: { materialId },

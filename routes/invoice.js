@@ -4,14 +4,15 @@ const { authenticate } = require('../middleware/auth');
 const { authorize } = require('../middleware/authorize');
 const { featureGuard } = require('../middleware/featureGuard');
 const { InvoiceService } = require('../services/InvoiceService');
+const prisma = require('../utils/prisma');
 
 /**
  * @swagger
  * /invoices:
  *   get:
  *     tags: [Invoices]
- *     summary: List all invoices
- *     description: Returns all invoices across all companies. Requires `invoices:read` permission.
+ *     summary: List invoices for the authenticated user
+ *     description: Returns invoices belonging to the user's companies. Requires `invoices:read` permission.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -27,9 +28,16 @@ const { InvoiceService } = require('../services/InvoiceService');
 router.get('/', authenticate, authorize('invoices', 'read'), featureGuard('isInvoiceManagement'), async (req, res, next) => {
   try {
     const { company } = req.query;
-    const result = company
-      ? await InvoiceService.listByCompany(company)
-      : await InvoiceService.listAll();
+    if (company) {
+      const result = await InvoiceService.listByCompany(company);
+      return res.json(result);
+    }
+    const memberships = await prisma.companyUser.findMany({
+      where: { userId: req.userId },
+      select: { company: { select: { name: true } } },
+    });
+    const companyNames = memberships.map(m => m.company.name);
+    const result = await InvoiceService.listByUserCompanyNames(companyNames);
     res.json(result);
   } catch (err) {
     next(err);

@@ -21,6 +21,15 @@ class InvoiceService {
     return invoices.map(i => new InvoiceResponse(i));
   }
 
+  async listByUserCompanyNames(companyNames) {
+    const invoices = await prisma.invoice.findMany({
+      where: { companyName: { in: companyNames } },
+      orderBy: { createdAt: 'desc' },
+      include: { items: true },
+    });
+    return invoices.map(i => new InvoiceResponse(i));
+  }
+
   async getById(invoiceId) {
     const invoice = await prisma.invoice.findUnique({
       where: { invoiceId },

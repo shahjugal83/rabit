@@ -4,14 +4,15 @@ const { authenticate } = require('../middleware/auth');
 const { authorize } = require('../middleware/authorize');
 const { featureGuard } = require('../middleware/featureGuard');
 const { MaterialService } = require('../services/MaterialService');
+const prisma = require('../utils/prisma');
 
 /**
  * @swagger
  * /materials:
  *   get:
  *     tags: [Materials]
- *     summary: List all materials
- *     description: Returns all materials across all companies. Requires `materials:read` permission.
+ *     summary: List materials for the authenticated user
+ *     description: Returns materials belonging to the user's companies. Requires `materials:read` permission.
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -20,7 +21,12 @@ const { MaterialService } = require('../services/MaterialService');
  */
 router.get('/', authenticate, authorize('materials', 'read'), featureGuard('isInvoiceManagement'), async (req, res, next) => {
   try {
-    const result = await MaterialService.listAll();
+    const memberships = await prisma.companyUser.findMany({
+      where: { userId: req.userId },
+      select: { companyId: true },
+    });
+    const companyIds = memberships.map(m => m.companyId);
+    const result = await MaterialService.listByUserCompanies(companyIds);
     res.json(result);
   } catch (err) {
     next(err);

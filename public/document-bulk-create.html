@@ -31,6 +31,12 @@
             <div class="form-card">
                 <div id="form-error" class="hidden global-error"></div>
                 <form id="bulk-create-form" class="space-y-4">
+                    <div class="hidden" id="company-select-wrap">
+                        <label class="label">Company *</label>
+                        <select id="company-select" class="form-input">
+                            <option value="">Select a company</option>
+                        </select>
+                    </div>
                     <div>
                         <label for="document-names" class="label">Document Type Names * (one per line)</label>
                         <textarea id="document-names" name="document-names" rows="6" required
@@ -52,23 +58,47 @@
     <script src="js/rabbit-card.js"></script>
     <script>
         const params = new URLSearchParams(window.location.search);
-        const companyId = params.get('companyId');
-        if (!companyId) {
-            window.location.href = 'documents.html';
-        }
+        var companyId = params.get('companyId');
 
         (async function() {
             renderSidebar('documents');
             const user = await requireAuth();
             if (!user) return;
             const isSuperAdmin = (user.companies || []).some(c => c.role && c.role.name === 'SUPER_ADMIN');
-            if (!isSuperAdmin) { window.location.href = 'documents.html'; return; }
+            if (!isSuperAdmin) { window.location.href = 'dashboard.html'; return; }
+
+            var companyResult = await apiCall('GET', '/companies');
+            if (companyResult && companyResult.status === 200) {
+                var companies = companyResult.data || [];
+                var selectWrap = document.getElementById('company-select-wrap');
+                if (companies.length > 1 || !companyId) {
+                    selectWrap.classList.remove('hidden');
+                    var select = document.getElementById('company-select');
+                    companies.forEach(function(c) {
+                        var opt = document.createElement('option');
+                        opt.value = c.companyId;
+                        opt.textContent = c.name;
+                        select.appendChild(opt);
+                    });
+                    if (companyId) select.value = companyId;
+                    select.addEventListener('change', function() {
+                        companyId = this.value;
+                    });
+                    companyId = select.value;
+                }
+            }
         })();
 
         document.getElementById('bulk-create-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             const errorEl = document.getElementById('form-error');
             errorEl.classList.add('hidden');
+
+            if (!companyId) {
+                errorEl.textContent = 'Please select a company';
+                errorEl.classList.remove('hidden');
+                return;
+            }
 
             const raw = document.getElementById('document-names').value;
             const names = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);

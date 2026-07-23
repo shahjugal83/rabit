@@ -31,6 +31,12 @@
             <div class="form-card">
                 <div id="form-error" class="hidden global-error"></div>
                 <form id="createDocForm" onsubmit="handleSubmit(event)">
+                    <div class="mb-4 hidden" id="company-select-wrap">
+                        <label class="label">Company *</label>
+                        <select id="company-select" class="form-input">
+                            <option value="">Select a company</option>
+                        </select>
+                    </div>
                     <div class="mb-4">
                         <label class="label">Document Type Name *</label>
                         <input type="text" id="doc-name" class="form-input" placeholder="e.g. Tax Invoice" required>
@@ -54,8 +60,7 @@
     <script src="js/rabbit-card.js"></script>
     <script>
         const params = new URLSearchParams(window.location.search);
-        const companyId = params.get('companyId');
-        if (!companyId) { window.location.href = 'documents.html'; }
+        var companyId = params.get('companyId');
 
         (async function() {
             renderSidebar('documents');
@@ -64,10 +69,36 @@
             const isSuperAdmin = (user.companies || []).some(c => c.role && c.role.name === 'SUPER_ADMIN');
             if (!isSuperAdmin) { window.location.href = 'dashboard.html'; return; }
             showAdminNavLinks({});
+
+            var companyResult = await apiCall('GET', '/companies');
+            if (companyResult && companyResult.status === 200) {
+                var companies = companyResult.data || [];
+                var selectWrap = document.getElementById('company-select-wrap');
+                if (companies.length > 1 || !companyId) {
+                    selectWrap.classList.remove('hidden');
+                    var select = document.getElementById('company-select');
+                    companies.forEach(function(c) {
+                        var opt = document.createElement('option');
+                        opt.value = c.companyId;
+                        opt.textContent = c.name;
+                        select.appendChild(opt);
+                    });
+                    if (companyId) select.value = companyId;
+                    select.addEventListener('change', function() {
+                        companyId = this.value;
+                    });
+                    companyId = select.value;
+                }
+            }
         })();
 
         async function handleSubmit(e) {
             e.preventDefault();
+            if (!companyId) {
+                document.getElementById('form-error').textContent = 'Please select a company';
+                document.getElementById('form-error').classList.remove('hidden');
+                return;
+            }
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;
             btn.textContent = 'Creating...';

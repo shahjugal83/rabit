@@ -29,6 +29,17 @@ if (process.env.NODE_ENV === 'production') {
   app.set('trust proxy', 1);
 }
 
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    if (host && `https://${host}` === origin) {
+      delete req.headers.origin;
+    }
+  }
+  next();
+});
+
 app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,

@@ -9,7 +9,7 @@
     "build": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "node prisma/seed.js",
-    "db:setup": "npx prisma db execute --file scripts/setup-tables.sql --schema prisma/schema.prisma && node prisma/seed.js",
+    "db:setup": "npx prisma db execute --file scripts/setup-tables.sql && node prisma/seed.js",
     "test": "jest --forceExit --detectOpenHandles"
   },
   "dependencies": {
